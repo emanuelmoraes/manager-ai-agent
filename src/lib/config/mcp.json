@@ -1,0 +1,18 @@
+{
+  "servers": [
+    {
+      "id": "github",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {}
+    },
+    {
+      "id": "everything",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-everything"],
+      "env": {}
+    }
+  ]
+}
