@@ -73,11 +73,6 @@ export const orchestratorFlow = ai.defineFlow(
     };
 
     try {
-      // Load MCP Tools dynamically
-      notify({ agentId: 'system', log: { message: 'Carregando ferramentas MCP registradas...', type: 'info' } });
-      const mcpTools = await getMcpTools();
-      notify({ agentId: 'system', log: { message: `${mcpTools.length} ferramentas MCP prontas para uso.`, type: 'success' } });
-
       if (!pipelineAgents || pipelineAgents.length === 0) {
         notify({ agentId: 'system', log: { message: 'Nenhum agente configurado no pipeline para execução.', type: 'system' } });
         return { finalOutput: "Nenhum agente no pipeline." };
@@ -89,6 +84,12 @@ export const orchestratorFlow = ai.defineFlow(
         const agent = pipelineAgents[i];
         notify({ agentId: agent.id, status: 'running' });
         notify({ agentId: agent.id, log: { message: `Iniciando execução: ${agent.name} (${agent.role})`, type: 'info' } });
+
+        // Carregar ferramentas MCP autorizadas para este agente
+        const allowedServers = (agent as any).mcpServers || [];
+        notify({ agentId: agent.id, log: { message: `Carregando ferramentas MCP autorizadas (${allowedServers.length} servidores)...`, type: 'info' } });
+        const agentMcpTools = await getMcpTools(allowedServers);
+        notify({ agentId: agent.id, log: { message: `${agentMcpTools.length} ferramentas MCP prontas para uso.`, type: 'success' } });
 
         const keys = getProviderKeys();
         let apiKey = "";
@@ -119,7 +120,7 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
             model: agent.model || 'googleai/gemini-2.5-pro',
             system: systemPrompt,
             prompt: promptText,
-            tools: [...mcpTools, consultarBaseConhecimentoTool],
+            tools: [...agentMcpTools, consultarBaseConhecimentoTool],
           });
           agentOutput = response.text;
         } else if (agent.provider === 'openai' && apiKey) {

@@ -66,7 +66,7 @@ function saveKnowledge(docs: Document[]): void {
 export async function addDocument(title: string, content: string): Promise<Omit<Document, 'embedding'>> {
   // 1. Gera o embedding usando a instância do Genkit
   const embeddingResult = await ai.embed({
-    embedder: 'googleai/text-embedding-004',
+    embedder: 'googleai/gemini-embedding-001',
     content: content,
   });
 
@@ -147,7 +147,7 @@ export async function searchKnowledge(query: string, limit: number = 3, minScore
 
   // 1. Gerar o embedding da query
   const embeddingResult = await ai.embed({
-    embedder: 'googleai/text-embedding-004',
+    embedder: 'googleai/gemini-embedding-001',
     content: query,
   });
   if (!embeddingResult || embeddingResult.length === 0) {

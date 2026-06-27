@@ -31,6 +31,7 @@ interface Agent {
   description: string;
   provider: "google" | "openai" | "anthropic";
   model: string;
+  mcpServers?: string[];
 }
 
 /* ─── Constants ──────────────────────────────────────────────── */
@@ -295,6 +296,8 @@ export default function WorkspacePage() {
   const [newAgentDescription, setNewAgentDescription] = useState("");
   const [newAgentProvider, setNewAgentProvider] = useState<"google" | "openai" | "anthropic">("google");
   const [newAgentModel, setNewAgentModel] = useState("googleai/gemini-1.5-pro");
+  const [newAgentMcpServers, setNewAgentMcpServers] = useState<string[]>([]);
+  const [availableMcpServers, setAvailableMcpServers] = useState<{ id: string; name?: string }[]>([]);
   const [formError, setFormError] = useState("");
 
   // Pipeline state
@@ -356,6 +359,16 @@ export default function WorkspacePage() {
     } catch (e) {
       console.error("Error loading chat histories", e);
     }
+
+    // Load available MCP servers
+    fetch("/api/settings/mcp")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setAvailableMcpServers(data.data);
+        }
+      })
+      .catch((err) => console.error("Error loading MCP servers", err));
   }, []);
 
   const handleCreateAgent = () => {
@@ -377,6 +390,7 @@ export default function WorkspacePage() {
       description: newAgentDescription.trim() || "Sem descrição fornecida.",
       provider: newAgentProvider,
       model: newAgentModel,
+      mcpServers: newAgentMcpServers,
     };
 
     const updatedAgents = [...agents, newAgent];
@@ -391,6 +405,7 @@ export default function WorkspacePage() {
     setNewAgentDescription("");
     setNewAgentProvider("google");
     setNewAgentModel("googleai/gemini-2.5-pro");
+    setNewAgentMcpServers([]);
     setFormError("");
     setIsModalOpen(false);
   };
@@ -415,6 +430,7 @@ export default function WorkspacePage() {
       description: newAgentDescription.trim() || "Sem descrição fornecida.",
       provider: newAgentProvider,
       model: newAgentModel,
+      mcpServers: newAgentMcpServers,
     };
 
     const updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a));
@@ -430,6 +446,7 @@ export default function WorkspacePage() {
     setNewAgentDescription("");
     setNewAgentProvider("google");
     setNewAgentModel("googleai/gemini-2.5-pro");
+    setNewAgentMcpServers([]);
     setFormError("");
     setIsModalOpen(false);
   };
@@ -466,6 +483,7 @@ export default function WorkspacePage() {
     setNewAgentDescription(agent.description);
     setNewAgentProvider(agent.provider);
     setNewAgentModel(agent.model);
+    setNewAgentMcpServers(agent.mcpServers || []);
     setFormError("");
     setIsModalOpen(true);
   };
@@ -479,6 +497,7 @@ export default function WorkspacePage() {
     setNewAgentDescription("");
     setNewAgentProvider("google");
     setNewAgentModel("googleai/gemini-1.5-pro");
+    setNewAgentMcpServers([]);
     setFormError("");
     setIsModalOpen(false);
   };
@@ -2538,6 +2557,39 @@ export default function WorkspacePage() {
                   onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
                   onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
                 />
+              </div>
+
+              {/* Acesso a Servidores MCP */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Acesso a Servidores MCP
+                </label>
+                {availableMcpServers.length === 0 ? (
+                  <p style={{ color: "#64748b", fontSize: "0.8rem", margin: "4px 0" }}>Nenhum servidor MCP cadastrado.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 120, overflowY: "auto", background: "rgba(0,0,0,0.15)", borderRadius: 8, padding: 10 }}>
+                    {availableMcpServers.map((srv) => {
+                      const isChecked = newAgentMcpServers.includes(srv.id);
+                      return (
+                        <label key={srv.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "#e2e8f0", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setNewAgentMcpServers(newAgentMcpServers.filter((id) => id !== srv.id));
+                              } else {
+                                setNewAgentMcpServers([...newAgentMcpServers, srv.id]);
+                              }
+                            }}
+                            style={{ cursor: "pointer", accentColor: "#7c3aed" }}
+                          />
+                          <span>{srv.name || srv.id}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

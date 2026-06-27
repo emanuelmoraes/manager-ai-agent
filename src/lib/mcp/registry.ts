@@ -2,7 +2,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { ai } from "@/lib/genkit";
-import mcpConfig from "../config/mcp.json";
+import fs from 'fs';
+import path from 'path';
 
 // Keep references to connected clients
 const mcpClients: Record<string, Client> = {};
@@ -11,10 +12,35 @@ let initialized = false;
 /**
  * Initializes all configured MCP servers.
  */
-export async function initializeMcpServers() {
-  if (initialized) return;
+export async function initializeMcpServers(force: boolean = false) {
+  if (initialized && !force) return;
 
-  for (const serverConfig of mcpConfig.servers) {
+  // Fechar conexões anteriores se for forçada a reinicialização
+  if (force) {
+    for (const [id, client] of Object.entries(mcpClients)) {
+      try {
+        await client.close();
+        console.log(`[MCP] Conexão encerrada para o servidor: ${id}`);
+      } catch (err) {
+        console.error(`[MCP] Erro ao fechar conexão com servidor ${id}:`, err);
+      }
+      delete mcpClients[id];
+    }
+  }
+
+  // Ler o arquivo mcp.json dinamicamente para evitar cache
+  const mcpConfigPath = path.join(process.cwd(), 'src', 'lib', 'config', 'mcp.json');
+  let configServers = [];
+  try {
+    if (fs.existsSync(mcpConfigPath)) {
+      const data = fs.readFileSync(mcpConfigPath, 'utf8');
+      configServers = JSON.parse(data).servers;
+    }
+  } catch (err) {
+    console.error('[MCP] Erro ao ler mcp.json para inicialização:', err);
+  }
+
+  for (const serverConfig of configServers) {
     try {
       const client = new Client(
         {
@@ -52,12 +78,17 @@ export async function initializeMcpServers() {
 /**
  * Loads all tools from connected MCP servers and maps them to Genkit tools.
  */
-export async function getMcpTools() {
+export async function getMcpTools(allowedServerIds?: string[]) {
   await initializeMcpServers();
 
   const genkitTools = [];
 
   for (const [serverId, client] of Object.entries(mcpClients)) {
+    // Se a lista de permitidos estiver definida e o servidor não estiver nela, pula
+    if (allowedServerIds && !allowedServerIds.includes(serverId)) {
+      continue;
+    }
+
     try {
       const { tools } = await client.listTools();
 
