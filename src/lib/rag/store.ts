@@ -9,14 +9,17 @@ export interface Document {
   embedding: number[];
 }
 
-const knowledgeCollection = adminDb.collection('knowledge');
+const getKnowledgeCollection = () => {
+  if (!adminDb) throw new Error("Firebase Admin não inicializado");
+  return adminDb.collection('knowledge');
+};
 
 /**
  * Retorna os documentos da base de conhecimento sem a propriedade embedding para manter leve na transmissão
  */
 export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
   try {
-    const snapshot = await knowledgeCollection.select('title', 'content', 'createdAt').get();
+    const snapshot = await getKnowledgeCollection().select('title', 'content', 'createdAt').get();
     return snapshot.docs.map((doc: any) => ({
       id: doc.id,
       title: doc.data().title,
@@ -34,7 +37,7 @@ export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
  */
 export async function getKnowledgeWithEmbeddings(): Promise<Document[]> {
   try {
-    const snapshot = await knowledgeCollection.get();
+    const snapshot = await getKnowledgeCollection().get();
     return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Document));
   } catch (err) {
     console.error('Erro ao ler base de conhecimento com embeddings:', err);
@@ -72,7 +75,7 @@ export async function addDocument(title: string, content: string): Promise<Omit<
     embedding,
   };
 
-  await knowledgeCollection.doc(newDoc.id).set(newDoc);
+  await getKnowledgeCollection().doc(newDoc.id).set(newDoc);
 
   // Retorna o documento sem o embedding
   const { embedding: _, ...result } = newDoc;
@@ -83,7 +86,7 @@ export async function addDocument(title: string, content: string): Promise<Omit<
  * Remove um documento pelo ID
  */
 export async function deleteDocument(id: string): Promise<boolean> {
-  const docRef = knowledgeCollection.doc(id);
+  const docRef = getKnowledgeCollection().doc(id);
   const doc = await docRef.get();
   if (!doc.exists) {
     return false; // Documento não encontrado

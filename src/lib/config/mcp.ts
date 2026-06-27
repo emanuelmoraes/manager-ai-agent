@@ -14,10 +14,10 @@ export interface McpConfig {
   servers: McpServerConfig[];
 }
 
-const mcpDocRef = adminDb.collection('config').doc('mcp');
-
 export async function getMcpConfig(): Promise<McpConfig> {
   try {
+    if (!adminDb) return { servers: [] };
+    const mcpDocRef = adminDb.collection('config').doc('mcp');
     const doc = await mcpDocRef.get();
     if (doc.exists) {
       const data = doc.data() as McpConfig;
@@ -31,6 +31,8 @@ export async function getMcpConfig(): Promise<McpConfig> {
 
 export async function saveMcpConfig(config: McpConfig): Promise<void> {
   try {
+    if (!adminDb) throw new Error("Firebase Admin não inicializado");
+    const mcpDocRef = adminDb.collection('config').doc('mcp');
     await mcpDocRef.set(config);
   } catch (error) {
     console.error('Erro ao salvar configuração MCP:', error);

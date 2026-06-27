@@ -6,13 +6,10 @@ export interface ProviderKeys {
   anthropic?: string;
 }
 
-const keysDocRef = adminDb.collection('config').doc('keys');
-
-/**
- * Lê as chaves salvas localmente.
- */
 export async function getProviderKeys(): Promise<ProviderKeys> {
   try {
+    if (!adminDb) return {};
+    const keysDocRef = adminDb.collection('config').doc('keys');
     const doc = await keysDocRef.get();
     if (doc.exists) {
       return doc.data() as ProviderKeys;
@@ -28,6 +25,8 @@ export async function getProviderKeys(): Promise<ProviderKeys> {
  */
 export async function saveProviderKeys(keys: ProviderKeys): Promise<void> {
   try {
+    if (!adminDb) throw new Error("Firebase Admin não inicializado");
+    const keysDocRef = adminDb.collection('config').doc('keys');
     const current = await getProviderKeys();
     const updated = { ...current, ...keys };
     
