@@ -17,7 +17,7 @@ const knowledgeCollection = adminDb.collection('knowledge');
 export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
   try {
     const snapshot = await knowledgeCollection.select('title', 'content', 'createdAt').get();
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc: any) => ({
       id: doc.id,
       title: doc.data().title,
       content: doc.data().content,
@@ -35,7 +35,7 @@ export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
 export async function getKnowledgeWithEmbeddings(): Promise<Document[]> {
   try {
     const snapshot = await knowledgeCollection.get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document));
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Document));
   } catch (err) {
     console.error('Erro ao ler base de conhecimento com embeddings:', err);
     return [];
