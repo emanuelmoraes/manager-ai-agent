@@ -6,6 +6,7 @@ README.md
 .next
 .git
 .env*
+!.env.production
 keys.json
 knowledge.json
 mcp.json
