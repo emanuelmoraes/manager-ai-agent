@@ -91,7 +91,7 @@ export const orchestratorFlow = ai.defineFlow(
         const agentMcpTools = await getMcpTools(allowedServers);
         notify({ agentId: agent.id, log: { message: `${agentMcpTools.length} ferramentas MCP prontas para uso.`, type: 'success' } });
 
-        const keys = getProviderKeys();
+        const keys = await getProviderKeys();
         let apiKey = "";
         if (agent.provider === 'google') apiKey = keys.google || process.env.GEMINI_API_KEY || "";
         else if (agent.provider === 'openai') apiKey = keys.openai || "";

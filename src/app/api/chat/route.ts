@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Campos message, provider e model são obrigatórios.' }, { status: 400 });
     }
 
-    const keys = getProviderKeys();
+    const keys = await getProviderKeys();
     let apiKey = "";
     if (provider === 'google') apiKey = keys.google || process.env.GEMINI_API_KEY || "";
     else if (provider === 'openai') apiKey = keys.openai || "";

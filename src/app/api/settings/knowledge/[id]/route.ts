@@ -13,7 +13,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: false, error: 'O ID do documento é obrigatório.' }, { status: 400 });
     }
 
-    const deleted = deleteDocument(id);
+    const deleted = await deleteDocument(id);
 
     if (!deleted) {
       return NextResponse.json({ success: false, error: 'Documento não encontrado.' }, { status: 404 });

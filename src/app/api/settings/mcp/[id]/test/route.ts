@@ -1,24 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-
-const mcpConfigPath = path.join(process.cwd(), 'src', 'lib', 'config', 'mcp.json');
-
-function getMcpConfig() {
-  try {
-    if (!fs.existsSync(mcpConfigPath)) {
-      return { servers: [] };
-    }
-    const data = fs.readFileSync(mcpConfigPath, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Erro ao ler mcp.json:', err);
-    return { servers: [] };
-  }
-}
+import { getMcpConfig } from '@/lib/config/mcp';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ success: false, error: 'O ID do servidor é obrigatório.' }, { status: 400 });
     }
 
-    const config = getMcpConfig();
+    const config = await getMcpConfig();
     const serverConfig = config.servers.find((s: any) => s.id === id);
 
     if (!serverConfig) {
@@ -47,12 +31,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (serverConfig.type === "stdio") {
       transport = new StdioClientTransport({
-        command: serverConfig.command,
+        command: serverConfig.command || "",
         args: serverConfig.args,
-        env: { ...process.env, ...(serverConfig.env || {}) },
+        env: { ...process.env, ...(serverConfig.env || {}) } as Record<string, string>,
       });
     } else if (serverConfig.type === "sse") {
-      transport = new SSEClientTransport(new URL(serverConfig.url));
+      transport = new SSEClientTransport(new URL(serverConfig.url || ""));
     } else {
       return NextResponse.json({ success: false, error: `Transporte MCP não suportado: ${serverConfig.type}` }, { status: 400 });
     }

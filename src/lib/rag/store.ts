@@ -1,6 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import { ai } from '../genkit';
+import { adminDb } from '../firebase/admin';
 
 export interface Document {
   id: string;
@@ -10,19 +9,20 @@ export interface Document {
   embedding: number[];
 }
 
-const knowledgePath = path.join(process.cwd(), 'src', 'lib', 'config', 'knowledge.json');
+const knowledgeCollection = adminDb.collection('knowledge');
 
 /**
  * Retorna os documentos da base de conhecimento sem a propriedade embedding para manter leve na transmissão
  */
-export function getKnowledge(): Omit<Document, 'embedding'>[] {
+export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
   try {
-    if (!fs.existsSync(knowledgePath)) {
-      return [];
-    }
-    const data = fs.readFileSync(knowledgePath, 'utf8');
-    const docs: Document[] = JSON.parse(data);
-    return docs.map(({ embedding, ...doc }) => doc);
+    const snapshot = await knowledgeCollection.select('title', 'content', 'createdAt').get();
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      title: doc.data().title,
+      content: doc.data().content,
+      createdAt: doc.data().createdAt,
+    }));
   } catch (err) {
     console.error('Erro ao ler base de conhecimento:', err);
     return [];
@@ -32,13 +32,10 @@ export function getKnowledge(): Omit<Document, 'embedding'>[] {
 /**
  * Retorna os documentos completos incluindo os embeddings
  */
-export function getKnowledgeWithEmbeddings(): Document[] {
+export async function getKnowledgeWithEmbeddings(): Promise<Document[]> {
   try {
-    if (!fs.existsSync(knowledgePath)) {
-      return [];
-    }
-    const data = fs.readFileSync(knowledgePath, 'utf8');
-    return JSON.parse(data);
+    const snapshot = await knowledgeCollection.get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document));
   } catch (err) {
     console.error('Erro ao ler base de conhecimento com embeddings:', err);
     return [];
@@ -46,18 +43,10 @@ export function getKnowledgeWithEmbeddings(): Document[] {
 }
 
 /**
- * Salva a lista de documentos no arquivo local
+ * Salva a lista de documentos no arquivo local (substituindo no Firebase seria complexo, usaremos delete/add)
  */
-function saveKnowledge(docs: Document[]): void {
-  try {
-    const dir = path.dirname(knowledgePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(knowledgePath, JSON.stringify(docs, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Erro ao salvar base de conhecimento:', err);
-  }
+async function saveKnowledge(docs: Document[]): Promise<void> {
+  // Esse método é legado para quem reescrevia todo o array. Vamos evitar usar.
 }
 
 /**
@@ -83,9 +72,7 @@ export async function addDocument(title: string, content: string): Promise<Omit<
     embedding,
   };
 
-  const docs = getKnowledgeWithEmbeddings();
-  docs.push(newDoc);
-  saveKnowledge(docs);
+  await knowledgeCollection.doc(newDoc.id).set(newDoc);
 
   // Retorna o documento sem o embedding
   const { embedding: _, ...result } = newDoc;
@@ -95,16 +82,14 @@ export async function addDocument(title: string, content: string): Promise<Omit<
 /**
  * Remove um documento pelo ID
  */
-export function deleteDocument(id: string): boolean {
-  const docs = getKnowledgeWithEmbeddings();
-  const initialLength = docs.length;
-  const filteredDocs = docs.filter((doc) => doc.id !== id);
-
-  if (filteredDocs.length === initialLength) {
+export async function deleteDocument(id: string): Promise<boolean> {
+  const docRef = knowledgeCollection.doc(id);
+  const doc = await docRef.get();
+  if (!doc.exists) {
     return false; // Documento não encontrado
   }
 
-  saveKnowledge(filteredDocs);
+  await docRef.delete();
   return true;
 }
 
@@ -140,7 +125,7 @@ export interface SearchResult {
  * Realiza pesquisa semântica por similaridade de cosseno na base de conhecimento local
  */
 export async function searchKnowledge(query: string, limit: number = 3, minScore: number = 0.5): Promise<SearchResult[]> {
-  const docs = getKnowledgeWithEmbeddings();
+  const docs = await getKnowledgeWithEmbeddings();
   if (docs.length === 0) {
     return [];
   }

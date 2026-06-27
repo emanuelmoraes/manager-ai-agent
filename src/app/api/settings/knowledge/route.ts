@@ -3,7 +3,7 @@ import { getKnowledge, addDocument } from '@/lib/rag/store';
 
 export async function GET() {
   try {
-    const list = getKnowledge();
+    const list = await getKnowledge();
     return NextResponse.json({ success: true, data: list });
   } catch (error: any) {
     console.error('Erro na API GET de conhecimento:', error);

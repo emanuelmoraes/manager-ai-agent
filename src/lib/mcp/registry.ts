@@ -2,9 +2,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { ai } from "@/lib/genkit";
-import fs from 'fs';
-import path from 'path';
 import { z } from 'genkit';
+import { getMcpConfig } from '@/lib/config/mcp';
 
 // Keep references to connected clients
 const mcpClients: Record<string, Client> = {};
@@ -29,16 +28,13 @@ export async function initializeMcpServers(force: boolean = false) {
     }
   }
 
-  // Ler o arquivo mcp.json dinamicamente para evitar cache
-  const mcpConfigPath = path.join(process.cwd(), 'src', 'lib', 'config', 'mcp.json');
-  let configServers = [];
+  // Ler a configuração MCP do Firebase
+  let configServers: any[] = [];
   try {
-    if (fs.existsSync(mcpConfigPath)) {
-      const data = fs.readFileSync(mcpConfigPath, 'utf8');
-      configServers = JSON.parse(data).servers;
-    }
+    const config = await getMcpConfig();
+    configServers = config.servers || [];
   } catch (err) {
-    console.error('[MCP] Erro ao ler mcp.json para inicialização:', err);
+    console.error('[MCP] Erro ao carregar configurações do Firebase:', err);
   }
 
   for (const serverConfig of configServers) {
@@ -55,9 +51,9 @@ export async function initializeMcpServers(force: boolean = false) {
 
       if (serverConfig.type === "stdio") {
         transport = new StdioClientTransport({
-          command: serverConfig.command,
+          command: serverConfig.command || "",
           args: serverConfig.args,
-          env: { ...process.env, ...(serverConfig.env || {}) },
+          env: { ...process.env, ...(serverConfig.env || {}) } as Record<string, string>,
         });
       } else if (serverConfig.type === "sse") {
         transport = new SSEClientTransport(new URL((serverConfig as any).url));

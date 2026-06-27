@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { getAgentsFromFirebase, getPipelineFromFirebase, getSessionsFromFirebase, getMessagesFromFirebase, syncAgentsToFirebase, deleteAgentFromFirebase, syncSessionToFirebase, deleteSessionFromFirebase, syncMessagesToFirebase, deleteMessagesFromFirebase, syncPipelineToFirebase } from "@/lib/firebase/sync";
 import Link from "next/link";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -322,59 +323,27 @@ export default function WorkspacePage() {
 
   const getAgent = (id: string) => agents.find((a) => a.id === id);
 
-  // Load agents and pipeline from local storage
+  // Load agents and pipeline from Firebase
   useEffect(() => {
-    const savedAgents = localStorage.getItem("manager_ai_agents");
-    if (savedAgents) {
+    const loadFirebaseData = async () => {
       try {
-        const parsed = JSON.parse(savedAgents);
-        if (Array.isArray(parsed)) {
-          const validated = parsed.map((agent: any) => ({
-            ...agent,
-            provider: agent.provider || "google",
-            model: agent.model || "googleai/gemini-2.5-pro",
-          }));
-          setAgents(validated);
-        }
-      } catch (e) {
-        console.error("Error loading agents from local storage", e);
-      }
-    }
+        const fAgents = await getAgentsFromFirebase();
+        if (fAgents.length) setAgents(fAgents as any);
 
-    const savedPipeline = localStorage.getItem("manager_ai_active_pipeline");
-    if (savedPipeline) {
-      try {
-        const parsed = JSON.parse(savedPipeline);
-        if (Array.isArray(parsed)) {
-          setPipeline(parsed);
-        }
-      } catch (e) {
-        console.error("Error loading pipeline from local storage", e);
-      }
-    }
+        const fPipeline = await getPipelineFromFirebase();
+        if (fPipeline.length) setPipeline(fPipeline);
 
-    // Load chat sessions & histories
-    try {
-      const savedSessions = localStorage.getItem("manager_ai_chat_sessions");
-      if (savedSessions) {
-        setChatSessions(JSON.parse(savedSessions));
-      }
+        const fSessions = await getSessionsFromFirebase();
+        if (fSessions.length) setChatSessions(fSessions as any);
 
-      const chats: Record<string, ChatMessage[]> = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith("manager_ai_chat_messages_")) {
-          const sessionId = key.replace("manager_ai_chat_messages_", "");
-          const savedChat = localStorage.getItem(key);
-          if (savedChat) {
-            chats[sessionId] = JSON.parse(savedChat);
-          }
-        }
+        const fChats = await getMessagesFromFirebase();
+        if (Object.keys(fChats).length) setChatMessages(fChats);
+      } catch (err) {
+        console.error("Erro carregando dados do Firebase:", err);
       }
-      setChatMessages(chats);
-    } catch (e) {
-      console.error("Error loading chat histories", e);
-    }
+    };
+    loadFirebaseData();
+
 
     // Load UI state
     try {
@@ -441,6 +410,7 @@ export default function WorkspacePage() {
     const updatedAgents = [...agents, newAgent];
     setAgents(updatedAgents);
     localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
+    syncAgentsToFirebase(updatedAgents);
 
     // Clear form states & close modal
     setNewAgentName("");
@@ -481,6 +451,7 @@ export default function WorkspacePage() {
     const updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a));
     setAgents(updatedAgents);
     localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
+    syncAgentsToFirebase(updatedAgents);
 
     // Reset editing state and close modal
     setEditingAgent(null);
@@ -501,22 +472,26 @@ export default function WorkspacePage() {
       const updatedAgents = agents.filter((a) => a.id !== id);
       setAgents(updatedAgents);
       localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
+      deleteAgentFromFirebase(id);
 
       // Remove from pipeline too
       const updatedPipeline = pipeline.filter((pid) => pid !== id);
       setPipeline(updatedPipeline);
       localStorage.setItem("manager_ai_active_pipeline", JSON.stringify(updatedPipeline));
+      syncPipelineToFirebase(updatedPipeline);
 
       // Remove associated chat sessions
       const agentSessions = chatSessions.filter(s => s.agentId === id);
       const remainingSessions = chatSessions.filter(s => s.agentId !== id);
       setChatSessions(remainingSessions);
       localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(remainingSessions));
+      agentSessions.forEach(s => deleteSessionFromFirebase(s.id));
 
       const updatedChats = { ...chatMessages };
       const updatedOpenIds = [...openSessionIds];
       agentSessions.forEach(s => {
         localStorage.removeItem(`manager_ai_chat_messages_${s.id}`);
+        deleteMessagesFromFirebase(s.id);
         delete updatedChats[s.id];
         const openIdx = updatedOpenIds.indexOf(s.id);
         if (openIdx > -1) updatedOpenIds.splice(openIdx, 1);
@@ -574,6 +549,7 @@ export default function WorkspacePage() {
     const updatedSessions = [...chatSessions, newSession];
     setChatSessions(updatedSessions);
     localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updatedSessions));
+    syncSessionToFirebase(newSession);
 
     // Open it in a tab and make it active
     if (!openSessionIds.includes(newSession.id)) {
@@ -592,6 +568,8 @@ export default function WorkspacePage() {
     const updated = chatSessions.map(s => s.id === sessionId ? { ...s, title: newTitle.trim() } : s);
     setChatSessions(updated);
     localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updated));
+    const session = updated.find(s => s.id === sessionId);
+    if(session) syncSessionToFirebase(session);
   };
 
   const handleDeleteSession = (sessionId: string) => {
@@ -599,8 +577,9 @@ export default function WorkspacePage() {
       const updatedSessions = chatSessions.filter(s => s.id !== sessionId);
       setChatSessions(updatedSessions);
       localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updatedSessions));
-
+      deleteSessionFromFirebase(sessionId);
       localStorage.removeItem(`manager_ai_chat_messages_${sessionId}`);
+      deleteMessagesFromFirebase(sessionId);
       const updatedChats = { ...chatMessages };
       delete updatedChats[sessionId];
       setChatMessages(updatedChats);
@@ -645,6 +624,8 @@ export default function WorkspacePage() {
       [activeSessionId]: updatedHistory
     }));
     localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(updatedHistory));
+    syncMessagesToFirebase(activeSessionId, updatedHistory);
+    syncMessagesToFirebase(activeSessionId, updatedHistory);
     setChatInput("");
     setChatLoading(true);
 
@@ -679,6 +660,7 @@ export default function WorkspacePage() {
         [activeSessionId]: finalHistory
       }));
       localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(finalHistory));
+      syncMessagesToFirebase(activeSessionId, finalHistory);
 
     } catch (e: any) {
       console.error(e);
@@ -693,6 +675,7 @@ export default function WorkspacePage() {
         [activeSessionId]: finalHistory
       }));
       localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(finalHistory));
+      syncMessagesToFirebase(activeSessionId, finalHistory);
     } finally {
       setChatLoading(false);
     }
@@ -701,6 +684,7 @@ export default function WorkspacePage() {
   const handleClearChatHistory = (sessionId: string) => {
     if (window.confirm("Deseja realmente limpar o histórico de conversas desta sessão?")) {
       localStorage.removeItem(`manager_ai_chat_messages_${sessionId}`);
+      deleteMessagesFromFirebase(sessionId);
       setChatMessages(prev => {
         const copy = { ...prev };
         delete copy[sessionId];
@@ -714,6 +698,7 @@ export default function WorkspacePage() {
     const updated = [...pipeline, agentId];
     setPipeline(updated);
     localStorage.setItem("manager_ai_active_pipeline", JSON.stringify(updated));
+    syncPipelineToFirebase(updated);
     setPipelineSelectId("");
   };
 
@@ -721,6 +706,7 @@ export default function WorkspacePage() {
     const updated = pipeline.filter((_, i) => i !== index);
     setPipeline(updated);
     localStorage.setItem("manager_ai_active_pipeline", JSON.stringify(updated));
+    syncPipelineToFirebase(updated);
   };
 
   const handleMovePipelineItem = (index: number, direction: "up" | "down") => {
@@ -735,6 +721,7 @@ export default function WorkspacePage() {
 
     setPipeline(updated);
     localStorage.setItem("manager_ai_active_pipeline", JSON.stringify(updated));
+    syncPipelineToFirebase(updated);
   };
 
   useEffect(() => {

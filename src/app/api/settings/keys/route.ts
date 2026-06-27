@@ -3,7 +3,7 @@ import { getProviderKeys, saveProviderKeys } from '@/lib/config/providers';
 
 export async function GET() {
   try {
-    const keys = getProviderKeys();
+    const keys = await getProviderKeys();
     // Return only a boolean indicator for security, don't expose actual keys
     const status = {
       google: !!keys.google,
@@ -18,20 +18,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const { google, openai, anthropic } = await req.json();
     
     // We only accept valid provider keys
-    const newKeys = {
-      google: body.google,
-      openai: body.openai,
-      anthropic: body.anthropic,
-    };
-
-    saveProviderKeys(newKeys);
+    await saveProviderKeys({ google, openai, anthropic });
     
-    if (newKeys.google) process.env.GEMINI_API_KEY = newKeys.google;
-    if (newKeys.openai) process.env.OPENAI_API_KEY = newKeys.openai;
-    if (newKeys.anthropic) process.env.ANTHROPIC_API_KEY = newKeys.anthropic;
+    if (google) process.env.GEMINI_API_KEY = google;
+    if (openai) process.env.OPENAI_API_KEY = openai;
+    if (anthropic) process.env.ANTHROPIC_API_KEY = anthropic;
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

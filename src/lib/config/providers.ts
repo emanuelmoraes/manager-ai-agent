@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { adminDb } from '../firebase/admin';
 
 export interface ProviderKeys {
   google?: string;
@@ -7,16 +6,16 @@ export interface ProviderKeys {
   anthropic?: string;
 }
 
-const keysPath = path.join(process.cwd(), 'src', 'lib', 'config', 'keys.json');
+const keysDocRef = adminDb.collection('config').doc('keys');
 
 /**
  * Lê as chaves salvas localmente.
  */
-export function getProviderKeys(): ProviderKeys {
+export async function getProviderKeys(): Promise<ProviderKeys> {
   try {
-    if (fs.existsSync(keysPath)) {
-      const data = fs.readFileSync(keysPath, 'utf8');
-      return JSON.parse(data) as ProviderKeys;
+    const doc = await keysDocRef.get();
+    if (doc.exists) {
+      return doc.data() as ProviderKeys;
     }
   } catch (error) {
     console.error('Erro ao ler chaves de API:', error);
@@ -27,9 +26,9 @@ export function getProviderKeys(): ProviderKeys {
 /**
  * Salva as chaves no arquivo local.
  */
-export function saveProviderKeys(keys: ProviderKeys): void {
+export async function saveProviderKeys(keys: ProviderKeys): Promise<void> {
   try {
-    const current = getProviderKeys();
+    const current = await getProviderKeys();
     const updated = { ...current, ...keys };
     
     // Remove chaves vazias
@@ -39,7 +38,7 @@ export function saveProviderKeys(keys: ProviderKeys): void {
       }
     }
 
-    fs.writeFileSync(keysPath, JSON.stringify(updated, null, 2), 'utf8');
+    await keysDocRef.set(updated, { merge: true });
   } catch (error) {
     console.error('Erro ao salvar chaves de API:', error);
     throw new Error('Falha ao salvar as configurações.');
