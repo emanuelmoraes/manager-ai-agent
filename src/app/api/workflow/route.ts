@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { task, model = 'googleai/gemini-2.5-pro' } = body;
+    const { task, model = 'googleai/gemini-1.5-pro', pipelineAgents = [] } = body;
 
     if (!task) {
       return new Response(JSON.stringify({ error: 'Task is required' }), {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
 
     // Start the Genkit flow stream
-    const { stream, output } = orchestratorFlow.stream({ task, model });
+    const { stream, output } = orchestratorFlow.stream({ task, model, pipelineAgents });
 
     // Process the stream asynchronously
     (async () => {
