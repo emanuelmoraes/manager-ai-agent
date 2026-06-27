@@ -303,7 +303,7 @@ export default function WorkspacePage() {
   const [newAgentColor, setNewAgentColor] = useState("#a78bfa");
   const [newAgentDescription, setNewAgentDescription] = useState("");
   const [newAgentProvider, setNewAgentProvider] = useState<"google" | "openai" | "anthropic">("google");
-  const [newAgentModel, setNewAgentModel] = useState("googleai/gemini-1.5-pro");
+  const [newAgentModel, setNewAgentModel] = useState("googleai/gemini-2.5-pro");
   const [newAgentMcpServers, setNewAgentMcpServers] = useState<string[]>([]);
   const [availableMcpServers, setAvailableMcpServers] = useState<{ id: string; name?: string }[]>([]);
   const [formError, setFormError] = useState("");
@@ -530,7 +530,7 @@ export default function WorkspacePage() {
     setNewAgentColor("#a78bfa");
     setNewAgentDescription("");
     setNewAgentProvider("google");
-    setNewAgentModel("googleai/gemini-1.5-pro");
+    setNewAgentModel("googleai/gemini-2.5-pro");
     setNewAgentMcpServers([]);
     setFormError("");
     setIsModalOpen(false);
@@ -1784,7 +1784,7 @@ export default function WorkspacePage() {
                         onChange={(e) => {
                           const prov = e.target.value as "google" | "openai" | "anthropic";
                           setNewAgentProvider(prov);
-                          if (prov === "google") setNewAgentModel("googleai/gemini-1.5-pro");
+                          if (prov === "google") setNewAgentModel("googleai/gemini-2.5-pro");
                           else if (prov === "openai") setNewAgentModel("gpt-4o");
                           else if (prov === "anthropic") setNewAgentModel("claude-3-5-sonnet-20241022");
                         }}
@@ -1826,8 +1826,8 @@ export default function WorkspacePage() {
                       >
                         {newAgentProvider === "google" && (
                           <>
-                            <option value="googleai/gemini-1.5-pro" style={{ background: "#110c1c" }}>gemini-1.5-pro</option>
-                            <option value="googleai/gemini-1.5-flash" style={{ background: "#110c1c" }}>gemini-1.5-flash</option>
+                            <option value="googleai/gemini-2.5-pro" style={{ background: "#110c1c" }}>gemini-2.5-pro</option>
+                            <option value="googleai/gemini-2.5-flash" style={{ background: "#110c1c" }}>gemini-2.5-flash</option>
                           </>
                         )}
                         {newAgentProvider === "openai" && (

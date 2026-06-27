@@ -6,7 +6,7 @@ import { getProviderKeys } from '@/lib/config/providers';
 
 const WorkflowInputSchema = z.object({
   task: z.string(),
-  model: z.string().default('googleai/gemini-1.5-pro'),
+  model: z.string().default('googleai/gemini-2.5-pro'),
   pipelineAgents: z.array(
     z.object({
       id: z.string(),

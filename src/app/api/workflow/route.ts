@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { task, model = 'googleai/gemini-1.5-pro', pipelineAgents = [] } = body;
+    const { task, model = 'googleai/gemini-2.5-pro', pipelineAgents = [] } = body;
 
     if (!task) {
       return new Response(JSON.stringify({ error: 'Task is required' }), {
