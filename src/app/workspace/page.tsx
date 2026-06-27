@@ -22,6 +22,13 @@ interface LogEntry {
   type: LogType;
 }
 
+interface ChatSession {
+  id: string;
+  agentId: string;
+  title: string;
+  updatedAt: number;
+}
+
 interface Agent {
   id: string;
   name: string;
@@ -305,6 +312,10 @@ export default function WorkspacePage() {
   const [pipelineSelectId, setPipelineSelectId] = useState("");
 
   // Chat states
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [openSessionIds, setOpenSessionIds] = useState<string[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -342,22 +353,41 @@ export default function WorkspacePage() {
       }
     }
 
-    // Load chat histories
+    // Load chat sessions & histories
     try {
+      const savedSessions = localStorage.getItem("manager_ai_chat_sessions");
+      if (savedSessions) {
+        setChatSessions(JSON.parse(savedSessions));
+      }
+
       const chats: Record<string, ChatMessage[]> = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith("manager_ai_chat_history_")) {
-          const agentId = key.replace("manager_ai_chat_history_", "");
+        if (key && key.startsWith("manager_ai_chat_messages_")) {
+          const sessionId = key.replace("manager_ai_chat_messages_", "");
           const savedChat = localStorage.getItem(key);
           if (savedChat) {
-            chats[agentId] = JSON.parse(savedChat);
+            chats[sessionId] = JSON.parse(savedChat);
           }
         }
       }
       setChatMessages(chats);
     } catch (e) {
       console.error("Error loading chat histories", e);
+    }
+
+    // Load UI state
+    try {
+      const savedSelectedAgent = localStorage.getItem("manager_ai_selected_agent");
+      if (savedSelectedAgent) setSelectedAgent(savedSelectedAgent);
+
+      const savedOpenSessions = localStorage.getItem("manager_ai_open_sessions");
+      if (savedOpenSessions) setOpenSessionIds(JSON.parse(savedOpenSessions));
+
+      const savedActiveSession = localStorage.getItem("manager_ai_active_session");
+      if (savedActiveSession) setActiveSessionId(savedActiveSession);
+    } catch (e) {
+      console.error("Error loading UI state", e);
     }
 
     // Load available MCP servers
@@ -370,6 +400,21 @@ export default function WorkspacePage() {
       })
       .catch((err) => console.error("Error loading MCP servers", err));
   }, []);
+
+  const isMounted = useRef(false);
+  useEffect(() => {
+    if (isMounted.current) {
+      if (selectedAgent) localStorage.setItem("manager_ai_selected_agent", selectedAgent);
+      else localStorage.removeItem("manager_ai_selected_agent");
+
+      localStorage.setItem("manager_ai_open_sessions", JSON.stringify(openSessionIds));
+      
+      if (activeSessionId) localStorage.setItem("manager_ai_active_session", activeSessionId);
+      else localStorage.removeItem("manager_ai_active_session");
+    } else {
+      isMounted.current = true;
+    }
+  }, [selectedAgent, openSessionIds, activeSessionId]);
 
   const handleCreateAgent = () => {
     if (!newAgentName.trim()) {
@@ -462,14 +507,28 @@ export default function WorkspacePage() {
       setPipeline(updatedPipeline);
       localStorage.setItem("manager_ai_active_pipeline", JSON.stringify(updatedPipeline));
 
-      // Remove chat history
-      localStorage.removeItem(`manager_ai_chat_history_${id}`);
+      // Remove associated chat sessions
+      const agentSessions = chatSessions.filter(s => s.agentId === id);
+      const remainingSessions = chatSessions.filter(s => s.agentId !== id);
+      setChatSessions(remainingSessions);
+      localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(remainingSessions));
+
       const updatedChats = { ...chatMessages };
-      delete updatedChats[id];
+      const updatedOpenIds = [...openSessionIds];
+      agentSessions.forEach(s => {
+        localStorage.removeItem(`manager_ai_chat_messages_${s.id}`);
+        delete updatedChats[s.id];
+        const openIdx = updatedOpenIds.indexOf(s.id);
+        if (openIdx > -1) updatedOpenIds.splice(openIdx, 1);
+      });
       setChatMessages(updatedChats);
+      setOpenSessionIds(updatedOpenIds);
 
       if (selectedAgent === id) {
         setSelectedAgent(null);
+      }
+      if (activeSessionId && agentSessions.find(s => s.id === activeSessionId)) {
+        setActiveSessionId(updatedOpenIds.length > 0 ? updatedOpenIds[updatedOpenIds.length - 1] : null);
       }
     }
   };
@@ -502,10 +561,74 @@ export default function WorkspacePage() {
     setIsModalOpen(false);
   };
 
-  const handleSendChatMessage = async () => {
-    if (!chatInput.trim() || chatLoading || !selectedAgent) return;
+  const handleCreateSession = (agentId: string) => {
+    const existingAgentSessions = chatSessions.filter(s => s.agentId === agentId);
+    const newSessionNumber = existingAgentSessions.length + 1;
+    const newSession: ChatSession = {
+      id: "session_" + Math.random().toString(36).slice(2, 11),
+      agentId,
+      title: `Conversa #${newSessionNumber}`,
+      updatedAt: Date.now()
+    };
 
-    const agent = getAgent(selectedAgent);
+    const updatedSessions = [...chatSessions, newSession];
+    setChatSessions(updatedSessions);
+    localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updatedSessions));
+
+    // Open it in a tab and make it active
+    if (!openSessionIds.includes(newSession.id)) {
+      setOpenSessionIds([...openSessionIds, newSession.id]);
+    }
+    setActiveSessionId(newSession.id);
+    // Note: don't automatically select the agent if the user created it from the sidebar, 
+    // it implies the agent is context, but setting selectedAgent makes the UI switch views.
+    if (selectedAgent !== agentId) {
+      setSelectedAgent(agentId);
+    }
+  };
+
+  const handleRenameSession = (sessionId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    const updated = chatSessions.map(s => s.id === sessionId ? { ...s, title: newTitle.trim() } : s);
+    setChatSessions(updated);
+    localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updated));
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    if (window.confirm("Deseja excluir esta conversa?")) {
+      const updatedSessions = chatSessions.filter(s => s.id !== sessionId);
+      setChatSessions(updatedSessions);
+      localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updatedSessions));
+
+      localStorage.removeItem(`manager_ai_chat_messages_${sessionId}`);
+      const updatedChats = { ...chatMessages };
+      delete updatedChats[sessionId];
+      setChatMessages(updatedChats);
+
+      const updatedOpenIds = openSessionIds.filter(id => id !== sessionId);
+      setOpenSessionIds(updatedOpenIds);
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(updatedOpenIds.length > 0 ? updatedOpenIds[updatedOpenIds.length - 1] : null);
+      }
+    }
+  };
+
+  const closeSessionTab = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedOpenIds = openSessionIds.filter(id => id !== sessionId);
+    setOpenSessionIds(updatedOpenIds);
+    if (activeSessionId === sessionId) {
+      setActiveSessionId(updatedOpenIds.length > 0 ? updatedOpenIds[updatedOpenIds.length - 1] : null);
+    }
+  };
+
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim() || chatLoading || !activeSessionId) return;
+
+    const session = chatSessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+    
+    const agent = getAgent(session.agentId);
     if (!agent) return;
 
     const userMsg: ChatMessage = {
@@ -514,14 +637,14 @@ export default function WorkspacePage() {
       timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     };
 
-    const currentHistory = chatMessages[selectedAgent] || [];
+    const currentHistory = chatMessages[activeSessionId] || [];
     const updatedHistory = [...currentHistory, userMsg];
 
     setChatMessages(prev => ({
       ...prev,
-      [selectedAgent]: updatedHistory
+      [activeSessionId]: updatedHistory
     }));
-    localStorage.setItem(`manager_ai_chat_history_${selectedAgent}`, JSON.stringify(updatedHistory));
+    localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(updatedHistory));
     setChatInput("");
     setChatLoading(true);
 
@@ -553,9 +676,9 @@ export default function WorkspacePage() {
       const finalHistory = [...updatedHistory, modelMsg];
       setChatMessages(prev => ({
         ...prev,
-        [selectedAgent]: finalHistory
+        [activeSessionId]: finalHistory
       }));
-      localStorage.setItem(`manager_ai_chat_history_${selectedAgent}`, JSON.stringify(finalHistory));
+      localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(finalHistory));
 
     } catch (e: any) {
       console.error(e);
@@ -567,20 +690,20 @@ export default function WorkspacePage() {
       const finalHistory = [...updatedHistory, errorMsg];
       setChatMessages(prev => ({
         ...prev,
-        [selectedAgent]: finalHistory
+        [activeSessionId]: finalHistory
       }));
-      localStorage.setItem(`manager_ai_chat_history_${selectedAgent}`, JSON.stringify(finalHistory));
+      localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(finalHistory));
     } finally {
       setChatLoading(false);
     }
   };
 
-  const handleClearChatHistory = (agentId: string) => {
-    if (window.confirm("Deseja realmente limpar o histórico de conversas com este agente?")) {
-      localStorage.removeItem(`manager_ai_chat_history_${agentId}`);
+  const handleClearChatHistory = (sessionId: string) => {
+    if (window.confirm("Deseja realmente limpar o histórico de conversas desta sessão?")) {
+      localStorage.removeItem(`manager_ai_chat_messages_${sessionId}`);
       setChatMessages(prev => {
         const copy = { ...prev };
-        delete copy[agentId];
+        delete copy[sessionId];
         return copy;
       });
     }
@@ -1018,12 +1141,12 @@ export default function WorkspacePage() {
                   const isDone = status === "done";
 
                   return (
-                    <div
-                      key={agent.id}
-                      onClick={() => setSelectedAgent(isSelected ? null : agent.id)}
-                      style={{
-                        width: "100%",
-                        display: "flex",
+                    <div key={agent.id}>
+                      <div
+                        onClick={() => setSelectedAgent(isSelected ? null : agent.id)}
+                        style={{
+                          width: "100%",
+                          display: "flex",
                         alignItems: "center",
                         gap: 10,
                         padding: "10px 12px",
@@ -1105,6 +1228,31 @@ export default function WorkspacePage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              handleCreateSession(agent.id);
+                            }}
+                            title="Nova Sessão"
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              background: "rgba(124,58,237,0.1)",
+                              border: "1px solid rgba(124,58,237,0.2)",
+                              color: "#a78bfa",
+                              fontSize: "0.65rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.2)"; e.currentTarget.style.color = "#c4b5fd"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.1)"; e.currentTarget.style.color = "#a78bfa"; }}
+                          >
+                            ➕ Nova Sessão
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
                               openEditModal(agent);
                             }}
                             title="Editar agente"
@@ -1155,12 +1303,63 @@ export default function WorkspacePage() {
                         </div>
                       </div>
                     </div>
+                    {/* Render Chat Sessions for this Agent */}
+                    {isSelected && chatSessions.filter(s => s.agentId === agent.id).map(session => (
+                      <div
+                        key={session.id}
+                        onClick={() => {
+                          if (!openSessionIds.includes(session.id)) {
+                            setOpenSessionIds([...openSessionIds, session.id]);
+                          }
+                          setActiveSessionId(session.id);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px 12px 8px 46px",
+                          background: activeSessionId === session.id ? "rgba(124,58,237,0.15)" : "transparent",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          borderLeft: `2px solid ${activeSessionId === session.id ? "#8b5cf6" : "transparent"}`,
+                          marginBottom: 2
+                        }}
+                        onMouseEnter={(e) => { if (activeSessionId !== session.id) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                        onMouseLeave={(e) => { if (activeSessionId !== session.id) e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <span style={{ fontSize: "0.75rem", color: activeSessionId === session.id ? "#e2e8f0" : "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
+                          💬 {session.title}
+                        </span>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newTitle = prompt("Renomear sessão:", session.title);
+                              if (newTitle) handleRenameSession(session.id, newTitle);
+                            }}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.8rem", opacity: 0.6 }}
+                            title="Renomear"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSession(session.id);
+                            }}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.8rem", opacity: 0.6 }}
+                            title="Excluir"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    </div>
                   );
                 })
               )}
             </div>
-
-
 
             {/* Sidebar footer */}
             <div
@@ -1213,7 +1412,58 @@ export default function WorkspacePage() {
 
             {/* ── MAIN CONTENT (CHAT) ────────────────────────────── */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: 24, gap: 16 }}>
-              {!selectedAgent ? (
+              
+              {/* TABS HEADER */}
+              {openSessionIds.length > 0 && (
+                <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                  {openSessionIds.map(sessionId => {
+                    const session = chatSessions.find(s => s.id === sessionId);
+                    if (!session) return null;
+                    const ag = getAgent(session.agentId);
+                    const isActive = activeSessionId === sessionId;
+                    return (
+                      <div
+                        key={sessionId}
+                        onClick={() => setActiveSessionId(sessionId)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "8px 16px",
+                          background: isActive ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
+                          border: `1px solid ${isActive ? "rgba(124,58,237,0.3)" : "rgba(255,255,255,0.08)"}`,
+                          borderRadius: 8,
+                          cursor: "pointer",
+                          color: isActive ? "#e2e8f0" : "#94a3b8",
+                          fontSize: "0.8rem",
+                          fontWeight: isActive ? 600 : 400,
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.9rem" }}>{ag?.icon || "💬"}</span>
+                        <span>{session.title}</span>
+                        <button
+                          onClick={(e) => closeSessionTab(sessionId, e)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#64748b",
+                            cursor: "pointer",
+                            fontSize: "1rem",
+                            lineHeight: 1,
+                            padding: "0 2px",
+                            marginLeft: 4,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {!activeSessionId ? (
                 <div
                   style={{
                     flex: 1,
@@ -1227,13 +1477,15 @@ export default function WorkspacePage() {
                 >
                   <div style={{ fontSize: 48 }}>💬</div>
                   <p style={{ fontSize: "0.85rem", color: "#475569", textAlign: "center", maxWidth: 300 }}>
-                    Selecione um agente na barra lateral para iniciar uma conversa.
+                    Nenhuma conversa aberta. Selecione um agente na barra lateral e clique em "+ Nova Sessão" ou escolha uma sessão existente.
                   </p>
                 </div>
               ) : (() => {
-                const ag = getAgent(selectedAgent);
+                const session = chatSessions.find(s => s.id === activeSessionId);
+                if (!session) return null;
+                const ag = getAgent(session.agentId);
                 if (!ag) return null;
-                const messages = chatMessages[selectedAgent] || [];
+                const messages = chatMessages[activeSessionId] || [];
                 return (
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
                     {/* Chat header */}
@@ -1246,7 +1498,7 @@ export default function WorkspacePage() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleClearChatHistory(ag.id)}
+                        onClick={() => handleClearChatHistory(session.id)}
                         style={{
                           padding: "6px 12px",
                           background: "transparent",
