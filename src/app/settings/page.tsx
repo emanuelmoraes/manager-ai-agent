@@ -51,6 +51,8 @@ export default function SettingsPage() {
     env: "",
   });
   const [savingMcp, setSavingMcp] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [testingMcp, setTestingMcp] = useState<string | null>(null);
 
   // Carregar status das chaves no início
   useEffect(() => {
@@ -136,7 +138,8 @@ export default function SettingsPage() {
           args: "",
           env: "",
         });
-        setMessage({ text: "Servidor MCP cadastrado com sucesso!", type: "success" });
+        setMessage({ text: editingId ? "Servidor MCP atualizado com sucesso!" : "Servidor MCP cadastrado com sucesso!", type: "success" });
+        setEditingId(null);
       } else {
         setMessage({ text: data.error || "Erro ao salvar servidor MCP.", type: "error" });
       }
@@ -170,6 +173,49 @@ export default function SettingsPage() {
     } finally {
       setTimeout(() => setMessage({ text: "", type: "" }), 3000);
     }
+  };
+
+  const handleEditMcpServer = (srv: McpServer) => {
+    setEditingId(srv.id);
+    setMcpForm({
+      id: srv.id,
+      name: srv.name || "",
+      type: srv.type,
+      url: srv.url || "",
+      command: srv.command || "",
+      args: srv.args && Array.isArray(srv.args) ? srv.args.join(", ") : "",
+      env: srv.env ? JSON.stringify(srv.env) : "",
+    });
+  };
+
+  const handleTestMcpServer = async (id: string) => {
+    setTestingMcp(id);
+    try {
+      const res = await fetch(`/api/settings/mcp/${id}/test`);
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ Conectado com sucesso ao servidor MCP!\n\nFerramentas Disponíveis (${data.tools.length}):\n${data.tools.map((t: any) => `- ${t.name}: ${t.description || "Sem descrição"}`).join("\n")}`);
+      } else {
+        alert(`❌ Erro ao testar conexão com o servidor:\n\n${data.error}`);
+      }
+    } catch (error: any) {
+      alert(`❌ Erro na requisição de teste:\n\n${error.message}`);
+    } finally {
+      setTestingMcp(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setMcpForm({
+      id: "",
+      name: "",
+      type: "sse",
+      url: "",
+      command: "",
+      args: "",
+      env: "",
+    });
   };
 
   const loadKnowledgeDocs = async () => {
@@ -696,33 +742,90 @@ export default function SettingsPage() {
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteMcpServer(srv.id)}
-                      style={{
-                        padding: 8,
-                        background: "rgba(239,68,68,0.1)",
-                        border: "1px solid rgba(239,68,68,0.2)",
-                        borderRadius: 10,
-                        color: "#ef4444",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all 0.2s"
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "rgba(239,68,68,0.2)";
-                        e.currentTarget.style.color = "#f87171";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "rgba(239,68,68,0.1)";
-                        e.currentTarget.style.color = "#ef4444";
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" />
-                      </svg>
-                    </button>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => handleTestMcpServer(srv.id)}
+                        disabled={testingMcp === srv.id}
+                        title="Testar Conexão"
+                        style={{
+                          padding: 8,
+                          background: "rgba(16,185,129,0.1)",
+                          border: "1px solid rgba(16,185,129,0.2)",
+                          borderRadius: 10,
+                          color: "#10b981",
+                          cursor: testingMcp === srv.id ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.2s",
+                          opacity: testingMcp === srv.id ? 0.5 : 1
+                        }}
+                        onMouseEnter={(e) => { if (testingMcp !== srv.id) { e.currentTarget.style.background = "rgba(16,185,129,0.2)"; } }}
+                        onMouseLeave={(e) => { if (testingMcp !== srv.id) { e.currentTarget.style.background = "rgba(16,185,129,0.1)"; } }}
+                      >
+                        {testingMcp === srv.id ? (
+                          <svg style={{ animation: "spin-slow 1s linear infinite" }} width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10" />
+                          </svg>
+                        ) : (
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => handleEditMcpServer(srv)}
+                        title="Editar Servidor"
+                        style={{
+                          padding: 8,
+                          background: "rgba(59,130,246,0.1)",
+                          border: "1px solid rgba(59,130,246,0.2)",
+                          borderRadius: 10,
+                          color: "#3b82f6",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.2)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(59,130,246,0.1)"; }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteMcpServer(srv.id)}
+                        title="Excluir Servidor"
+                        style={{
+                          padding: 8,
+                          background: "rgba(239,68,68,0.1)",
+                          border: "1px solid rgba(239,68,68,0.2)",
+                          borderRadius: 10,
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(239,68,68,0.2)";
+                          e.currentTarget.style.color = "#f87171";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                          e.currentTarget.style.color = "#ef4444";
+                        }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -732,7 +835,7 @@ export default function SettingsPage() {
           {/* RIGHT PANEL: Add Server Form */}
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 24, padding: 30, display: "flex", flexDirection: "column", gap: 20 }}>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: 0, color: "#e2e8f0" }}>
-              Cadastrar Servidor MCP
+              {editingId ? "Editar Servidor MCP" : "Cadastrar Servidor MCP"}
             </h2>
             <p style={{ fontSize: "0.82rem", color: "#64748b", margin: 0, lineHeight: 1.5 }}>
               Adicione conexões com servidores MCP locais ou remotos. Os agentes autorizados poderão utilizar as ferramentas expostas por estes servidores de forma automática.
@@ -747,8 +850,8 @@ export default function SettingsPage() {
                   placeholder="Ex: mcp-weather"
                   value={mcpForm.id}
                   onChange={(e) => setMcpForm({ ...mcpForm, id: e.target.value })}
-                  disabled={savingMcp}
-                  style={{ width: "100%", background: "#0f0e17", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", color: "#e2e8f0", fontSize: "0.9rem", outline: "none", transition: "border-color 0.2s" }}
+                  disabled={savingMcp || editingId !== null}
+                  style={{ width: "100%", background: "#0f0e17", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", color: "#e2e8f0", fontSize: "0.9rem", outline: "none", transition: "border-color 0.2s", opacity: editingId ? 0.6 : 1 }}
                   onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
                   onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
                   required
@@ -849,29 +952,54 @@ export default function SettingsPage() {
                 </>
               )}
 
-              <button
-                type="submit"
-                disabled={savingMcp || !mcpForm.id.trim()}
-                style={{
-                  background: savingMcp ? "rgba(124,58,237,0.3)" : "#7c3aed",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 12,
-                  padding: "14px 20px",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  cursor: savingMcp || !mcpForm.id.trim() ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  transition: "background 0.2s",
-                  boxShadow: "0 4px 12px rgba(124,58,237,0.15)",
-                  marginTop: 8
-                }}
-              >
-                {savingMcp ? "Conectando..." : "🔌 Cadastrar Servidor"}
-              </button>
+              <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                <button
+                  type="submit"
+                  disabled={savingMcp || !mcpForm.id.trim()}
+                  style={{
+                    flex: 1,
+                    background: savingMcp ? "rgba(124,58,237,0.3)" : "#7c3aed",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 12,
+                    padding: "14px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    cursor: savingMcp || !mcpForm.id.trim() ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    transition: "background 0.2s",
+                    boxShadow: "0 4px 12px rgba(124,58,237,0.15)",
+                  }}
+                >
+                  {savingMcp ? "Conectando..." : editingId ? "💾 Salvar Alterações" : "🔌 Cadastrar Servidor"}
+                </button>
+
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={savingMcp}
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 12,
+                      padding: "14px 20px",
+                      color: "#94a3b8",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: savingMcp ? "not-allowed" : "pointer",
+                      transition: "all 0.3s"
+                    }}
+                    onMouseEnter={(e) => { if (!savingMcp) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                    onMouseLeave={(e) => { if (!savingMcp) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </div>

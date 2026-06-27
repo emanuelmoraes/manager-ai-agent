@@ -533,7 +533,8 @@ export default function WorkspacePage() {
           message: userMsg.content,
           systemPrompt: `Você é o agente '${agent.name}'. Especialidade: '${agent.role}'. Descrição: '${agent.description}'`,
           provider: agent.provider,
-          model: agent.model
+          model: agent.model,
+          mcpServers: agent.mcpServers || []
         })
       });
 
@@ -1017,7 +1018,7 @@ export default function WorkspacePage() {
                   const isDone = status === "done";
 
                   return (
-                    <button
+                    <div
                       key={agent.id}
                       onClick={() => setSelectedAgent(isSelected ? null : agent.id)}
                       style={{
@@ -1081,179 +1082,85 @@ export default function WorkspacePage() {
                       </div>
 
                       {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#e2e8f0", marginBottom: 2 }}>
-                          {agent.name}
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#e2e8f0", marginBottom: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{agent.name}</span>
+                          <div
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: "50%",
+                              background: statusColor[status],
+                              flexShrink: 0,
+                              boxShadow: isRunningState ? `0 0 6px ${statusColor[status]}` : "none",
+                              animation: isRunningState ? "pulse-dot 1s infinite" : "none",
+                            }}
+                          />
                         </div>
                         <div style={{ fontSize: "0.7rem", color: "#475569", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {agent.role}
                         </div>
+                        
+                        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(agent);
+                            }}
+                            title="Editar agente"
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              color: "#94a3b8",
+                              fontSize: "0.65rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = "#f8fafc"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                          >
+                            📝 Editar
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteAgent(agent.id);
+                            }}
+                            title="Remover agente"
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              background: "rgba(239,68,68,0.1)",
+                              border: "1px solid rgba(239,68,68,0.2)",
+                              color: "#f87171",
+                              fontSize: "0.65rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; e.currentTarget.style.color = "#ef4444"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#f87171"; }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
-
-                      {/* Status dot */}
-                      <div
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: "50%",
-                          background: statusColor[status],
-                          flexShrink: 0,
-                          boxShadow: isRunningState ? `0 0 6px ${statusColor[status]}` : "none",
-                          animation: isRunningState ? "pulse-dot 1s infinite" : "none",
-                        }}
-                      />
-                    </button>
+                    </div>
                   );
                 })
               )}
             </div>
 
-            {/* Selected agent detail */}
-            {selectedAgent && (() => {
-              const ag = getAgent(selectedAgent);
-              if (!ag) return null;
-              const st: AgentStatus = agentStatuses[selectedAgent] || "idle";
-              return (
-                <div
-                  style={{
-                    borderTop: "1px solid rgba(255,255,255,0.06)",
-                    padding: 16,
-                    background: "rgba(255,255,255,0.02)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 20 }}>{ag.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: 700, color: ag.color }}>{ag.name}</div>
-                      <div style={{ fontSize: "0.65rem", color: "#475569", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ag.role}</div>
-                    </div>
-                  </div>
 
-                  {/* Provider & Model badge */}
-                  <div style={{ marginBottom: 10, fontSize: "0.65rem", color: "#64748b" }}>
-                    <span style={{ color: "#475569" }}>Config:</span> {(ag.provider || 'google').toUpperCase()} ({(ag.model || 'googleai/gemini-2.5-pro').replace('googleai/', '')})
-                  </div>
-
-                  <p style={{ fontSize: "0.72rem", color: "#64748b", lineHeight: 1.6, marginBottom: 12, maxHeight: 80, overflowY: "auto" }}>
-                    {ag.description}
-                  </p>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {/* Status indicator + Chat button */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "5px 10px",
-                          borderRadius: 8,
-                          background: `${statusColor[st]}12`,
-                          border: `1px solid ${statusColor[st]}25`,
-                        }}
-                      >
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor[st] }} />
-                        <span style={{ fontSize: "0.7rem", fontWeight: 600, color: statusColor[st] }}>
-                          {statusLabel[st]}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setActiveTab("chat");
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                          padding: "6px 12px",
-                          borderRadius: 8,
-                          border: "1px solid rgba(124,58,237,0.25)",
-                          background: "rgba(124,58,237,0.1)",
-                          color: "#a78bfa",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(124,58,237,0.2)";
-                          e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "rgba(124,58,237,0.1)";
-                          e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
-                        }}
-                      >
-                        💬 Conversar
-                      </button>
-                    </div>
-
-                    {/* Edit & Delete row */}
-                    <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                      <button
-                        onClick={() => openEditModal(ag)}
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          padding: "6px 10px",
-                          borderRadius: 8,
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          background: "rgba(255,255,255,0.03)",
-                          color: "#94a3b8",
-                          fontSize: "0.7rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                          e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                          e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                        }}
-                      >
-                        📝 Editar
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteAgent(ag.id)}
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: 8,
-                          border: "1px solid rgba(239,68,68,0.2)",
-                          background: "rgba(239,68,68,0.06)",
-                          color: "#f87171",
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                        title="Excluir agente"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(239,68,68,0.12)";
-                          e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "rgba(239,68,68,0.06)";
-                          e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)";
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* Sidebar footer */}
             <div
@@ -1304,966 +1211,189 @@ export default function WorkspacePage() {
           {/* ── MAIN PANEL ─────────────────────────────────────── */}
           <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-            {/* Tabs */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0,
-                padding: "0 24px",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
-                height: 44,
-                flexShrink: 0,
-              }}
-            >
-              {(
-                [
-                  { id: "task", label: "Tarefa", icon: "📝" },
-                  { id: "pipeline", label: "Pipeline", icon: "🔗" },
-                  { id: "history", label: "Histórico", icon: "🕐" },
-                  ...(selectedAgent ? [{ id: "chat" as TabId, label: `Conversar`, icon: "💬" }] : [])
-                ] as { id: TabId; label: string; icon: string }[]
-              ).map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "0 16px",
-                      height: "100%",
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: "0.8rem",
-                      fontWeight: isActive ? 600 : 400,
-                      color: isActive ? "#e2e8f0" : "#475569",
-                      transition: "color 0.2s",
-                    }}
-                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = "#94a3b8"; }}
-                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "#475569"; }}
-                  >
-                    <span style={{ fontSize: 13 }}>{tab.icon}</span>
-                    {tab.label}
-                    {isActive && <div className="tab-active-underline" />}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* ── TAB: TASK ─────────────────────────────────────── */}
-            {activeTab === "task" && (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: 24, gap: 16 }}>
-
-                {/* Task input area */}
+            {/* ── MAIN CONTENT (CHAT) ────────────────────────────── */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: 24, gap: 16 }}>
+              {!selectedAgent ? (
                 <div
                   style={{
+                    flex: 1,
                     display: "flex",
                     flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                     gap: 12,
-                    padding: 20,
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 16,
-                    flexShrink: 0,
+                    opacity: 0.4,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      Descrição da Tarefa
-                    </span>
-                  </div>
-
-                  <textarea
-                    value={taskInput}
-                    onChange={(e) => setTaskInput(e.target.value)}
-                    disabled={isRunning}
-                    placeholder="Descreva a tarefa que os agentes devem executar. Seja específico sobre o objetivo, contexto e formato de saída esperado…"
-                    rows={5}
-                    style={{
-                      width: "100%",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 12,
-                      padding: "14px 16px",
-                      color: "#e2e8f0",
-                      fontSize: "0.9rem",
-                      lineHeight: 1.7,
-                      resize: "none",
-                      outline: "none",
-                      fontFamily: "var(--font-geist-sans)",
-                      transition: "border-color 0.2s",
-                      opacity: isRunning ? 0.5 : 1,
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.4)")}
-                    onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
-                  />
-
-                  {/* Config row */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-                    {/* Model selector */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "6px 12px",
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: 8,
-                          fontSize: "0.75rem",
-                          color: "#64748b",
-                        }}
-                      >
-                        <span>🤖</span>
-                        <span style={{ color: "#a78bfa", fontWeight: 600 }}>gemini-1.5-pro</span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "6px 12px",
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: 8,
-                          fontSize: "0.75rem",
-                          color: "#64748b",
-                        }}
-                      >
-                        <span>🔄</span>
-                        <span>Paralelo</span>
-                      </div>
-                    </div>
-
-                    {/* Char count */}
-                    <span style={{ fontSize: "0.72rem", color: "#334155" }}>
-                      {taskInput.length}/2000
-                    </span>
-                  </div>
-                </div>
-
-                {/* Execute button + result area */}
-                <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
-                  <button
-                    id="btn-execute-pipeline"
-                    onClick={executeWorkflow}
-                    disabled={isRunning || !taskInput.trim()}
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 10,
-                      padding: "14px 24px",
-                      background:
-                        isRunning || !taskInput.trim()
-                          ? "rgba(124,58,237,0.2)"
-                          : "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
-                      border: "none",
-                      borderRadius: 12,
-                      color: isRunning || !taskInput.trim() ? "#64748b" : "white",
-                      fontSize: "0.9rem",
-                      fontWeight: 700,
-                      cursor: isRunning || !taskInput.trim() ? "not-allowed" : "pointer",
-                      transition: "all 0.2s",
-                      boxShadow:
-                        isRunning || !taskInput.trim()
-                          ? "none"
-                          : "0 0 0 1px rgba(124,58,237,0.5), 0 8px 24px rgba(124,58,237,0.3)",
-                    }}
-                  >
-                    {isRunning ? (
-                      <>
-                        <svg
-                          style={{ animation: "spin-slow 1s linear infinite" }}
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10" />
-                        </svg>
-                        Executando Pipeline…
-                      </>
-                    ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
-                        </svg>
-                        Executar Pipeline
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Execution result banner */}
-                {allDone && !isRunning && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "14px 20px",
-                      background: "rgba(34,197,94,0.08)",
-                      border: "1px solid rgba(34,197,94,0.25)",
-                      borderRadius: 12,
-                      animation: "slide-in 0.3s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        background: "rgba(34,197,94,0.15)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 18,
-                        flexShrink: 0,
-                      }}
-                    >
-                      ✓
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4ade80", marginBottom: 2 }}>
-                        Pipeline concluído com sucesso
-                      </div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                        {agents.length} agentes · {executionTime}s · Qualidade validada
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Empty state */}
-                {!isRunning && logs.length === 0 && (
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 12,
-                      opacity: 0.4,
-                    }}
-                  >
-                    <div style={{ fontSize: 48 }}>🤖</div>
-                    <p style={{ fontSize: "0.85rem", color: "#475569", textAlign: "center", maxWidth: 300 }}>
-                      Descreva uma tarefa acima e clique em{" "}
-                      <strong style={{ color: "#64748b" }}>Executar Pipeline</strong> para iniciar.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── TAB: PIPELINE ─────────────────────────────────── */}
-            {activeTab === "pipeline" && (
-              <div
-                style={{
-                  flex: 1,
-                  overflowY: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  padding: 24,
-                  gap: 20,
-                }}
-              >
-                {/* Configuration Section at the top */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: 16,
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 12,
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#e2e8f0" }}>Configurar Pipeline</span>
-                    <span style={{ fontSize: "0.7rem", color: "#64748b" }}>Adicione agentes para criar um pipeline de execução sequencial.</span>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <select
-                      value={pipelineSelectId}
-                      onChange={(e) => setPipelineSelectId(e.target.value)}
-                      style={{
-                        padding: "8px 12px",
-                        background: "rgba(17,12,28,0.96)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: 8,
-                        color: "#e2e8f0",
-                        fontSize: "0.8rem",
-                        outline: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <option value="">Selecione um agente...</option>
-                      {agents.map(ag => (
-                        <option key={ag.id} value={ag.id}>
-                          {ag.icon} {ag.name} ({ag.role})
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => handleAddToPipeline(pipelineSelectId)}
-                      disabled={!pipelineSelectId}
-                      style={{
-                        padding: "8px 16px",
-                        background: !pipelineSelectId ? "rgba(124,58,237,0.2)" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
-                        border: "none",
-                        borderRadius: 8,
-                        color: !pipelineSelectId ? "#64748b" : "white",
-                        fontSize: "0.8rem",
-                        fontWeight: 700,
-                        cursor: !pipelineSelectId ? "not-allowed" : "pointer",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      Adicionar ao Pipeline
-                    </button>
-                  </div>
-                </div>
-
-                {/* Flow Display Area */}
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "rgba(255,255,255,0.01)",
-                    border: "1px dashed rgba(255,255,255,0.04)",
-                    borderRadius: 16,
-                    padding: 32,
-                  }}
-                >
-                  {pipeline.length === 0 ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 12,
-                        opacity: 0.4,
-                      }}
-                    >
-                      <div style={{ fontSize: 48 }}>🔗</div>
-                      <p style={{ fontSize: "0.85rem", color: "#475569", textAlign: "center", maxWidth: 300 }}>
-                        Pipeline está vazio. Adicione agentes no menu superior para montar seu fluxo.
-                      </p>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-                      {pipeline.map((agentId, index) => {
-                        const agent = getAgent(agentId);
-                        if (!agent) return null;
-                        const status = agentStatuses[agentId] || "idle";
-                        const isSelected = selectedAgent === agentId;
-
-                        return (
-                          <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                            {/* Connector line for item > 0 */}
-                            {index > 0 && (
-                              <svg width="2" height="32" viewBox="0 0 2 32">
-                                <line
-                                  x1="1"
-                                  y1="0"
-                                  x2="1"
-                                  y2="32"
-                                  stroke={status === "running" ? "#f59e0b" : "rgba(124,58,237,0.3)"}
-                                  strokeWidth="2"
-                                  strokeDasharray="4 3"
-                                  style={{
-                                    animation: status === "running" ? "flow-dash 0.8s linear infinite" : "none"
-                                  }}
-                                />
-                              </svg>
-                            )}
-
-                            {/* Node box wrapper to align Node and controls side by side */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                              <PipelineNode
-                                agent={agent}
-                                status={status}
-                                isSelected={isSelected}
-                                onClick={() => setSelectedAgent(isSelected ? null : agentId)}
-                              />
-
-                              {/* Reorder and remove buttons */}
-                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                <button
-                                  onClick={() => handleMovePipelineItem(index, "up")}
-                                  disabled={index === 0}
-                                  title="Subir agente no pipeline"
-                                  style={{
-                                    width: 24,
-                                    height: 24,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    background: "rgba(255,255,255,0.03)",
-                                    border: "1px solid rgba(255,255,255,0.06)",
-                                    borderRadius: 6,
-                                    color: index === 0 ? "#334155" : "#94a3b8",
-                                    cursor: index === 0 ? "not-allowed" : "pointer",
-                                    fontSize: "0.7rem",
-                                    transition: "all 0.2s"
-                                  }}
-                                >
-                                  ▲
-                                </button>
-
-                                <button
-                                  onClick={() => handleMovePipelineItem(index, "down")}
-                                  disabled={index === pipeline.length - 1}
-                                  title="Descer agente no pipeline"
-                                  style={{
-                                    width: 24,
-                                    height: 24,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    background: "rgba(255,255,255,0.03)",
-                                    border: "1px solid rgba(255,255,255,0.06)",
-                                    borderRadius: 6,
-                                    color: index === pipeline.length - 1 ? "#334155" : "#94a3b8",
-                                    cursor: index === pipeline.length - 1 ? "not-allowed" : "pointer",
-                                    fontSize: "0.7rem",
-                                    transition: "all 0.2s"
-                                  }}
-                                >
-                                  ▼
-                                </button>
-
-                                <button
-                                  onClick={() => handleRemoveFromPipeline(index)}
-                                  title="Remover do pipeline"
-                                  style={{
-                                    width: 24,
-                                    height: 24,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    background: "rgba(239,68,68,0.06)",
-                                    border: "1px solid rgba(239,68,68,0.2)",
-                                    borderRadius: 6,
-                                    color: "#f87171",
-                                    cursor: "pointer",
-                                    fontSize: "0.75rem",
-                                    transition: "all 0.2s",
-                                    fontWeight: "bold"
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Final Result / Output connection */}
-                      <svg width="2" height="32" viewBox="0 0 2 32">
-                        <line x1="1" y1="0" x2="1" y2="32" stroke={allDone ? "#22c55e" : "rgba(255,255,255,0.08)"} strokeWidth="2" strokeDasharray="4 3" />
-                      </svg>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          padding: "12px 24px",
-                          background: allDone ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.03)",
-                          border: `1px solid ${allDone ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.08)"}`,
-                          borderRadius: 12,
-                        }}
-                      >
-                        <span style={{ fontSize: 18 }}>{allDone ? "✅" : "📤"}</span>
-                        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: allDone ? "#4ade80" : "#475569" }}>
-                          {allDone ? "Output Final — Aprovado" : "Aguardando Resultado"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB: HISTORY ──────────────────────────────────── */}
-            {activeTab === "history" && (
-              <div style={{ flex: 1, overflow: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    Execuções Recentes
-                  </span>
-                  <span style={{ fontSize: "0.72rem", color: "#334155" }}>
-                    {MOCK_HISTORY.length} registros
-                  </span>
-                </div>
-
-                {MOCK_HISTORY.map((run) => (
-                  <div
-                    key={run.id}
-                    style={{
-                      padding: "16px 18px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: `1px solid ${run.status === "error" ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.07)"}`,
-                      borderRadius: 14,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                      e.currentTarget.style.borderColor = run.status === "error" ? "rgba(239,68,68,0.35)" : "rgba(124,58,237,0.25)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                      e.currentTarget.style.borderColor = run.status === "error" ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.07)";
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
-                      <p style={{ fontSize: "0.83rem", color: "#c4b5fd", lineHeight: 1.5, flex: 1, margin: 0 }}>
-                        {run.task}
-                      </p>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "2px 10px",
-                          borderRadius: 100,
-                          background: run.status === "done" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-                          border: `1px solid ${run.status === "done" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 5,
-                            height: 5,
-                            borderRadius: "50%",
-                            background: run.status === "done" ? "#22c55e" : "#ef4444",
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontSize: "0.65rem",
-                            fontWeight: 600,
-                            color: run.status === "done" ? "#4ade80" : "#f87171",
-                          }}
-                        >
-                          {run.status === "done" ? "Concluído" : "Erro"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                      {[
-                        { icon: "🕐", label: run.date },
-                        { icon: "⏱️", label: run.duration },
-                        { icon: "🤖", label: `${run.agents} agentes` },
-                        { icon: "💬", label: `${run.tokens.toLocaleString()} tokens` },
-                      ].map((meta) => (
-                        <span
-                          key={meta.label}
-                          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", color: "#475569" }}
-                        >
-                          <span style={{ fontSize: 11 }}>{meta.icon}</span>
-                          {meta.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* ── TAB: CHAT ─────────────────────────────────────── */}
-            {activeTab === "chat" && (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: 24, gap: 16 }}>
-                {!selectedAgent ? (
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 12,
-                      opacity: 0.4,
-                    }}
-                  >
-                    <div style={{ fontSize: 48 }}>💬</div>
-                    <p style={{ fontSize: "0.85rem", color: "#475569", textAlign: "center", maxWidth: 300 }}>
-                      Selecione um agente na barra lateral para iniciar uma conversa.
-                    </p>
-                  </div>
-                ) : (() => {
-                  const ag = getAgent(selectedAgent);
-                  if (!ag) return null;
-                  const messages = chatMessages[selectedAgent] || [];
-                  return (
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
-                      {/* Chat header */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 24 }}>{ag.icon}</span>
-                          <div>
-                            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: ag.color }}>{ag.name}</div>
-                            <div style={{ fontSize: "0.65rem", color: "#64748b" }}>{ag.role}</div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleClearChatHistory(ag.id)}
-                          style={{
-                            padding: "6px 12px",
-                            background: "transparent",
-                            border: "1px solid rgba(239,68,68,0.25)",
-                            borderRadius: 8,
-                            color: "#f87171",
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "rgba(239,68,68,0.1)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
-                          }}
-                        >
-                          Limpar Histórico
-                        </button>
-                      </div>
-
-                      {/* Chat messages */}
-                      <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-                        {messages.length === 0 ? (
-                          <div
-                            style={{
-                              flex: 1,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: 0.3,
-                              gap: 8,
-                            }}
-                          >
-                            <div style={{ fontSize: 32 }}>💬</div>
-                            <p style={{ fontSize: "0.75rem", color: "#475569", textAlign: "center" }}>
-                              Envie uma mensagem para iniciar a conversa com {ag.name}.
-                            </p>
-                          </div>
-                        ) : (
-                          messages.map((msg, index) => {
-                            const isUser = msg.role === "user";
-                            return (
-                              <div
-                                key={index}
-                                style={{
-                                  alignSelf: isUser ? "flex-end" : "flex-start",
-                                  maxWidth: "75%",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 4,
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    padding: "10px 14px",
-                                    borderRadius: 14,
-                                    borderTopRightRadius: isUser ? 2 : 14,
-                                    borderTopLeftRadius: isUser ? 14 : 2,
-                                    background: isUser ? "linear-gradient(135deg, #7c3aed, #4f46e5)" : "rgba(255,255,255,0.04)",
-                                    border: isUser ? "none" : "1px solid rgba(255,255,255,0.06)",
-                                    color: "#e2e8f0",
-                                    fontSize: "0.85rem",
-                                    lineHeight: 1.5,
-                                    whiteSpace: "pre-wrap",
-                                    wordBreak: "break-word"
-                                  }}
-                                >
-                                  {msg.content}
-                                </div>
-                                <span style={{ fontSize: "0.6rem", color: "#475569", alignSelf: isUser ? "flex-end" : "flex-start" }}>
-                                  {msg.timestamp}
-                                </span>
-                              </div>
-                            );
-                          })
-                        )}
-                        {chatLoading && (
-                          <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, borderTopLeftRadius: 2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                            <svg
-                              style={{ animation: "spin-slow 1s linear infinite" }}
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="#64748b"
-                            >
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10" />
-                            </svg>
-                            <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Pensando...</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Chat input form */}
-                      <div style={{ padding: 16, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.1)", display: "flex", gap: 10 }}>
-                        <input
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleSendChatMessage();
-                            }
-                          }}
-                          disabled={chatLoading}
-                          placeholder={`Converse com ${ag.name}...`}
-                          style={{
-                            flex: 1,
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            borderRadius: 10,
-                            padding: "10px 14px",
-                            color: "#e2e8f0",
-                            fontSize: "0.85rem",
-                            outline: "none"
-                          }}
-                          onFocus={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.4)")}
-                          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
-                        />
-                        <button
-                          onClick={handleSendChatMessage}
-                          disabled={chatLoading || !chatInput.trim()}
-                          style={{
-                            padding: "10px 18px",
-                            background: chatLoading || !chatInput.trim() ? "rgba(124,58,237,0.2)" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
-                            border: "none",
-                            borderRadius: 10,
-                            color: chatLoading || !chatInput.trim() ? "#64748b" : "white",
-                            fontSize: "0.85rem",
-                            fontWeight: 700,
-                            cursor: chatLoading || !chatInput.trim() ? "not-allowed" : "pointer",
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          Enviar
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-          </main>
-
-          {/* ── RIGHT PANEL: Activity Log ──────────────────────── */}
-          <aside
-            style={{
-              width: 320,
-              flexShrink: 0,
-              borderLeft: "1px solid rgba(255,255,255,0.06)",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            {/* Log header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "12px 16px",
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
-                flexShrink: 0,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                  Atividade
-                </span>
-                {logs.length > 0 && (
-                  <span
-                    style={{
-                      fontSize: "0.65rem",
-                      padding: "2px 7px",
-                      background: "rgba(124,58,237,0.15)",
-                      border: "1px solid rgba(124,58,237,0.25)",
-                      borderRadius: 100,
-                      color: "#a78bfa",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {logs.length}
-                  </span>
-                )}
-              </div>
-
-              {/* Running indicator */}
-              {isRunning && (
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <div
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: "#f59e0b",
-                      animation: "pulse-dot 1s infinite",
-                    }}
-                  />
-                  <span style={{ fontSize: "0.65rem", color: "#f59e0b", fontWeight: 600 }}>
-                    ao vivo
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Log entries */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "8px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-              }}
-            >
-              {logs.length === 0 ? (
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: 0.3,
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ fontSize: 32 }}>📋</div>
-                  <p style={{ fontSize: "0.75rem", color: "#475569", textAlign: "center" }}>
-                    O log de atividade aparecerá aqui durante a execução.
+                  <div style={{ fontSize: 48 }}>💬</div>
+                  <p style={{ fontSize: "0.85rem", color: "#475569", textAlign: "center", maxWidth: 300 }}>
+                    Selecione um agente na barra lateral para iniciar uma conversa.
                   </p>
                 </div>
-              ) : (
-                logs.map((entry) => {
-                  const ag = getAgent(entry.agentId);
-                  const color =
-                    entry.agentId === "system"
-                      ? entry.type === "success"
-                        ? "#22c55e"
-                        : "#475569"
-                      : ag?.color || "#94a3b8";
-
-                  return (
-                    <div
-                      key={entry.id}
-                      className="log-entry"
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        background:
-                          entry.agentId === "system"
-                            ? entry.type === "success"
-                              ? "rgba(34,197,94,0.06)"
-                              : "rgba(255,255,255,0.02)"
-                            : "rgba(255,255,255,0.025)",
-                        border: `1px solid ${
-                          entry.agentId === "system"
-                            ? entry.type === "success"
-                              ? "rgba(34,197,94,0.15)"
-                              : "rgba(255,255,255,0.04)"
-                            : `${color}18`
-                        }`,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                          {ag && (
-                            <span style={{ fontSize: 11 }}>{ag.icon}</span>
-                          )}
-                          <span
-                            style={{
-                              fontSize: "0.65rem",
-                              fontWeight: 700,
-                              color,
-                              letterSpacing: "0.04em",
-                            }}
-                          >
-                            {ag ? ag.name.toUpperCase() : "SYSTEM"}
-                          </span>
+              ) : (() => {
+                const ag = getAgent(selectedAgent);
+                if (!ag) return null;
+                const messages = chatMessages[selectedAgent] || [];
+                return (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
+                    {/* Chat header */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 24 }}>{ag.icon}</span>
+                        <div>
+                          <div style={{ fontSize: "0.85rem", fontWeight: 700, color: ag.color }}>{ag.name}</div>
+                          <div style={{ fontSize: "0.65rem", color: "#64748b" }}>{ag.role}</div>
                         </div>
-                        <span style={{ fontSize: "0.6rem", color: "#334155", fontFamily: "var(--font-geist-mono)" }}>
-                          {formatTime(entry.timestamp)}
-                        </span>
                       </div>
-                      <p style={{ fontSize: "0.75rem", color: entry.type === "success" ? "#86efac" : "#94a3b8", lineHeight: 1.5, margin: 0 }}>
-                        {entry.message}
-                      </p>
+                      <button
+                        onClick={() => handleClearChatHistory(ag.id)}
+                        style={{
+                          padding: "6px 12px",
+                          background: "transparent",
+                          border: "1px solid rgba(239,68,68,0.25)",
+                          borderRadius: 8,
+                          color: "#f87171",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        Limpar Histórico
+                      </button>
                     </div>
-                  );
-                })
-              )}
-              <div ref={logsEndRef} />
-            </div>
 
-            {/* Log footer stats */}
-            {allDone && !isRunning && (
-              <div
-                style={{
-                  borderTop: "1px solid rgba(255,255,255,0.05)",
-                  padding: "12px 16px",
-                  display: "flex",
-                  gap: 12,
-                  justifyContent: "space-between",
-                  flexShrink: 0,
-                }}
-              >
-                {[
-                  { label: "Tempo", value: `${executionTime}s` },
-                  { label: "Agentes", value: `${agents.length}` },
-                  { label: "Eventos", value: `${logs.length}` },
-                ].map((stat) => (
-                  <div key={stat.label} style={{ flex: 1, textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: 800,
-                        background: "linear-gradient(135deg,#fff,#a78bfa)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                      }}
-                    >
-                      {stat.value}
+                    {/* Chat messages */}
+                    <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                      {messages.length === 0 ? (
+                        <div
+                          style={{
+                            flex: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: 0.3,
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ fontSize: 32 }}>💬</div>
+                          <p style={{ fontSize: "0.75rem", color: "#475569", textAlign: "center" }}>
+                            Envie uma mensagem para iniciar a conversa com {ag.name}.
+                          </p>
+                        </div>
+                      ) : (
+                        messages.map((msg, index) => {
+                          const isUser = msg.role === "user";
+                          return (
+                            <div
+                              key={index}
+                              style={{
+                                alignSelf: isUser ? "flex-end" : "flex-start",
+                                maxWidth: "75%",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  padding: "10px 14px",
+                                  borderRadius: 14,
+                                  borderTopRightRadius: isUser ? 2 : 14,
+                                  borderTopLeftRadius: isUser ? 14 : 2,
+                                  background: isUser ? "linear-gradient(135deg, #7c3aed, #4f46e5)" : "rgba(255,255,255,0.04)",
+                                  border: isUser ? "none" : "1px solid rgba(255,255,255,0.06)",
+                                  color: "#e2e8f0",
+                                  fontSize: "0.85rem",
+                                  lineHeight: 1.5,
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word"
+                                }}
+                              >
+                                {msg.content}
+                              </div>
+                              <span style={{ fontSize: "0.6rem", color: "#475569", alignSelf: isUser ? "flex-end" : "flex-start" }}>
+                                {msg.timestamp}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                      {chatLoading && (
+                        <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, borderTopLeftRadius: 2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <svg
+                            style={{ animation: "spin-slow 1s linear infinite" }}
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#64748b"
+                          >
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10" />
+                          </svg>
+                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Pensando...</span>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: "0.65rem", color: "#475569" }}>{stat.label}</div>
+
+                    {/* Chat input form */}
+                    <div style={{ padding: 16, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.1)", display: "flex", gap: 10 }}>
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSendChatMessage();
+                          }
+                        }}
+                        disabled={chatLoading}
+                        placeholder={`Converse com ${ag.name}...`}
+                        style={{
+                          flex: 1,
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: 10,
+                          padding: "10px 14px",
+                          color: "#e2e8f0",
+                          fontSize: "0.85rem",
+                          outline: "none"
+                        }}
+                        onFocus={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.4)")}
+                        onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
+                      />
+                      <button
+                        onClick={handleSendChatMessage}
+                        disabled={chatLoading || !chatInput.trim()}
+                        style={{
+                          padding: "10px 18px",
+                          background: chatLoading || !chatInput.trim() ? "rgba(124,58,237,0.2)" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                          border: "none",
+                          borderRadius: 10,
+                          color: chatLoading || !chatInput.trim() ? "#64748b" : "white",
+                          fontSize: "0.85rem",
+                          fontWeight: 700,
+                          cursor: chatLoading || !chatInput.trim() ? "not-allowed" : "pointer",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        Enviar
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </aside>
+                );
+              })()}
+            </div>
+          </main>
+
+
         </div>
       </div>
 
@@ -2292,325 +1422,346 @@ export default function WorkspacePage() {
               background: "rgba(17, 12, 28, 0.96)",
               border: "1px solid rgba(124, 58, 237, 0.3)",
               borderRadius: 16,
-              width: "100%",
-              maxWidth: 480,
-              padding: 24,
+              width: "90%",
+              maxWidth: 860,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
               boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 30px rgba(124, 58, 237, 0.15)",
               animation: "scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
-                {editingAgent ? "Editar Agente" : "Adicionar Novo Agente"}
-              </h3>
-              <button
-                onClick={closeModal}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#64748b",
-                  cursor: "pointer",
-                  fontSize: "1.2rem",
-                  padding: "0 4px",
-                  lineHeight: 1,
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#f8fafc"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "#64748b"}
-              >
-                &times;
-              </button>
+            {/* Header (fixo no topo) */}
+            <div style={{ padding: "24px 24px 16px 24px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+                  {editingAgent ? "Editar Agente" : "Adicionar Novo Agente"}
+                </h3>
+                <button
+                  onClick={closeModal}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#64748b",
+                    cursor: "pointer",
+                    fontSize: "1.5rem",
+                    padding: "0 4px",
+                    lineHeight: 0.8,
+                    transition: "color 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = "#f8fafc"}
+                  onMouseLeave={(e) => e.currentTarget.style.color = "#64748b"}
+                >
+                  &times;
+                </button>
+              </div>
+              <p style={{ fontSize: "0.8rem", color: "#94a3b8", margin: "6px 0 0 0" }}>
+                {editingAgent
+                  ? "Modifique as propriedades, instruções e provedor de IA deste agente."
+                  : "Crie um novo agente personalizado para integrar na sua interface do workspace."}
+              </p>
             </div>
-            <p style={{ fontSize: "0.8rem", color: "#94a3b8", margin: "0 0 20px" }}>
-              {editingAgent
-                ? "Modifique as propriedades, instruções e provedor de IA deste agente."
-                : "Crie um novo agente personalizado para integrar na sua interface do workspace."}
-            </p>
 
-            {formError && (
-              <div
-                style={{
-                  padding: "8px 12px",
-                  background: "rgba(239,68,68,0.1)",
-                  border: "1px solid rgba(239,68,68,0.2)",
-                  borderRadius: 8,
-                  color: "#f87171",
-                  fontSize: "0.75rem",
-                  marginBottom: 16,
-                }}
-              >
-                {formError}
-              </div>
-            )}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Nome */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Nome do Agente *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Coder, Designer, Translator"
-                  value={newAgentName}
-                  onChange={(e) => setNewAgentName(e.target.value)}
+            {/* Body (scrollável se necessário) */}
+            <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+              {formError && (
+                <div
                   style={{
-                    padding: "10px 12px",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    padding: "10px 14px",
+                    background: "rgba(239,68,68,0.1)",
+                    border: "1px solid rgba(239,68,68,0.2)",
                     borderRadius: 8,
-                    color: "#f8fafc",
-                    fontSize: "0.85rem",
-                    outline: "none",
-                    transition: "all 0.2s",
+                    color: "#f87171",
+                    fontSize: "0.75rem",
+                    marginBottom: 20,
                   }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
-                  onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
-                />
-              </div>
-
-              {/* Função */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Função / Especialidade *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Desenvolvimento & Debugging"
-                  value={newAgentRole}
-                  onChange={(e) => setNewAgentRole(e.target.value)}
-                  style={{
-                    padding: "10px 12px",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 8,
-                    color: "#f8fafc",
-                    fontSize: "0.85rem",
-                    outline: "none",
-                    transition: "all 0.2s",
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
-                  onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
-                />
-              </div>
-
-              {/* Provedor e Modelo */}
-              <div style={{ display: "flex", gap: 16 }}>
-                {/* Seleção de Provedor */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Provedor *
-                  </label>
-                  <select
-                    value={newAgentProvider}
-                    onChange={(e) => {
-                      const prov = e.target.value as "google" | "openai" | "anthropic";
-                      setNewAgentProvider(prov);
-                      if (prov === "google") setNewAgentModel("googleai/gemini-1.5-pro");
-                      else if (prov === "openai") setNewAgentModel("gpt-4o");
-                      else if (prov === "anthropic") setNewAgentModel("claude-3-5-sonnet-20241022");
-                    }}
-                    style={{
-                      padding: "10px 12px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 8,
-                      color: "#f8fafc",
-                      fontSize: "0.85rem",
-                      outline: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value="google" style={{ background: "#110c1c" }}>Google Gemini</option>
-                    <option value="openai" style={{ background: "#110c1c" }}>OpenAI</option>
-                    <option value="anthropic" style={{ background: "#110c1c" }}>Anthropic</option>
-                  </select>
+                >
+                  {formError}
                 </div>
+              )}
 
-                {/* Seleção de Modelo */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Modelo *
-                  </label>
-                  <select
-                    value={newAgentModel}
-                    onChange={(e) => setNewAgentModel(e.target.value)}
-                    style={{
-                      padding: "10px 12px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 8,
-                      color: "#f8fafc",
-                      fontSize: "0.85rem",
-                      outline: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {newAgentProvider === "google" && (
-                      <>
-                        <option value="googleai/gemini-1.5-pro" style={{ background: "#110c1c" }}>gemini-1.5-pro</option>
-                        <option value="googleai/gemini-1.5-flash" style={{ background: "#110c1c" }}>gemini-1.5-flash</option>
-                      </>
-                    )}
-                    {newAgentProvider === "openai" && (
-                      <>
-                        <option value="gpt-4o" style={{ background: "#110c1c" }}>gpt-4o</option>
-                        <option value="gpt-4o-mini" style={{ background: "#110c1c" }}>gpt-4o-mini</option>
-                      </>
-                    )}
-                    {newAgentProvider === "anthropic" && (
-                      <>
-                        <option value="claude-3-5-sonnet-20241022" style={{ background: "#110c1c" }}>claude-3-5-sonnet-20241022</option>
-                        <option value="claude-3-5-haiku-20241022" style={{ background: "#110c1c" }}>claude-3-5-haiku-20241022</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 28 }}>
+                {/* COLUNA ESQUERDA */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* Nome */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Nome do Agente *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Coder, Designer, Translator"
+                      value={newAgentName}
+                      onChange={(e) => setNewAgentName(e.target.value)}
+                      style={{
+                        padding: "10px 12px",
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 8,
+                        color: "#f8fafc",
+                        fontSize: "0.85rem",
+                        outline: "none",
+                        transition: "all 0.2s",
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
+                      onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
+                    />
+                  </div>
 
-              {/* Ícone e Cor */}
-              <div style={{ display: "flex", gap: 16 }}>
-                {/* Seleção de Ícone */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Ícone
-                  </label>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {["🤖", "💻", "🎨", "🚀", "📊", "🔍", "✍️", "🛡️", "🔑"].map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setNewAgentIcon(emoji)}
+                  {/* Função */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Função / Especialidade *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Desenvolvimento & Debugging"
+                      value={newAgentRole}
+                      onChange={(e) => setNewAgentRole(e.target.value)}
+                      style={{
+                        padding: "10px 12px",
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 8,
+                        color: "#f8fafc",
+                        fontSize: "0.85rem",
+                        outline: "none",
+                        transition: "all 0.2s",
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
+                      onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
+                    />
+                  </div>
+
+                  {/* Provedor e Modelo */}
+                  <div style={{ display: "flex", gap: 16 }}>
+                    {/* Seleção de Provedor */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Provedor *
+                      </label>
+                      <select
+                        value={newAgentProvider}
+                        onChange={(e) => {
+                          const prov = e.target.value as "google" | "openai" | "anthropic";
+                          setNewAgentProvider(prov);
+                          if (prov === "google") setNewAgentModel("googleai/gemini-1.5-pro");
+                          else if (prov === "openai") setNewAgentModel("gpt-4o");
+                          else if (prov === "anthropic") setNewAgentModel("claude-3-5-sonnet-20241022");
+                        }}
                         style={{
-                          fontSize: "1.1rem",
-                          padding: "6px 8px",
-                          background: newAgentIcon === emoji ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.03)",
-                          border: `1px solid ${newAgentIcon === emoji ? "#7c3aed" : "rgba(255,255,255,0.08)"}`,
+                          padding: "10px 12px",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.08)",
                           borderRadius: 8,
+                          color: "#f8fafc",
+                          fontSize: "0.85rem",
+                          outline: "none",
                           cursor: "pointer",
-                          transition: "all 0.2s",
                         }}
                       >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                        <option value="google" style={{ background: "#110c1c" }}>Google Gemini</option>
+                        <option value="openai" style={{ background: "#110c1c" }}>OpenAI</option>
+                        <option value="anthropic" style={{ background: "#110c1c" }}>Anthropic</option>
+                      </select>
+                    </div>
 
-                {/* Seleção de Cor */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Cor Tema
-                  </label>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {[
-                      { name: "Violet", hex: "#a78bfa" },
-                      { name: "Blue", hex: "#60a5fa" },
-                      { name: "Green", hex: "#34d399" },
-                      { name: "Orange", hex: "#fb923c" },
-                      { name: "Pink", hex: "#f472b6" },
-                      { name: "Cyan", hex: "#22d3ee" },
-                    ].map((colorItem) => (
-                      <button
-                        key={colorItem.hex}
-                        type="button"
-                        onClick={() => setNewAgentColor(colorItem.hex)}
+                    {/* Seleção de Modelo */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Modelo *
+                      </label>
+                      <select
+                        value={newAgentModel}
+                        onChange={(e) => setNewAgentModel(e.target.value)}
                         style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background: colorItem.hex,
-                          border: newAgentColor === colorItem.hex ? "2px solid #ffffff" : "2px solid transparent",
+                          padding: "10px 12px",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: 8,
+                          color: "#f8fafc",
+                          fontSize: "0.85rem",
+                          outline: "none",
                           cursor: "pointer",
-                          boxShadow: newAgentColor === colorItem.hex ? `0 0 8px ${colorItem.hex}` : "none",
-                          transition: "all 0.2s",
                         }}
-                        title={colorItem.name}
-                      />
-                    ))}
+                      >
+                        {newAgentProvider === "google" && (
+                          <>
+                            <option value="googleai/gemini-1.5-pro" style={{ background: "#110c1c" }}>gemini-1.5-pro</option>
+                            <option value="googleai/gemini-1.5-flash" style={{ background: "#110c1c" }}>gemini-1.5-flash</option>
+                          </>
+                        )}
+                        {newAgentProvider === "openai" && (
+                          <>
+                            <option value="gpt-4o" style={{ background: "#110c1c" }}>gpt-4o</option>
+                            <option value="gpt-4o-mini" style={{ background: "#110c1c" }}>gpt-4o-mini</option>
+                          </>
+                        )}
+                        {newAgentProvider === "anthropic" && (
+                          <>
+                            <option value="claude-3-5-sonnet-20241022" style={{ background: "#110c1c" }}>claude-3-5-sonnet-20241022</option>
+                            <option value="claude-3-5-haiku-20241022" style={{ background: "#110c1c" }}>claude-3-5-haiku-20241022</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Ícone e Cor */}
+                  <div style={{ display: "flex", gap: 16 }}>
+                    {/* Seleção de Ícone */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Ícone
+                      </label>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {["🤖", "💻", "🎨", "🚀", "📊", "🔍", "✍️", "🛡️", "🔑"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => setNewAgentIcon(emoji)}
+                            style={{
+                              fontSize: "1.1rem",
+                              padding: "6px 8px",
+                              background: newAgentIcon === emoji ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.03)",
+                              border: `1px solid ${newAgentIcon === emoji ? "#7c3aed" : "rgba(255,255,255,0.08)"}`,
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Seleção de Cor */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Cor Tema
+                      </label>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {[
+                          { name: "Violet", hex: "#a78bfa" },
+                          { name: "Blue", hex: "#60a5fa" },
+                          { name: "Green", hex: "#34d399" },
+                          { name: "Orange", hex: "#fb923c" },
+                          { name: "Pink", hex: "#f472b6" },
+                          { name: "Cyan", hex: "#22d3ee" },
+                        ].map((colorItem) => (
+                          <button
+                            key={colorItem.hex}
+                            type="button"
+                            onClick={() => setNewAgentColor(colorItem.hex)}
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: "50%",
+                              background: colorItem.hex,
+                              border: newAgentColor === colorItem.hex ? "2px solid #ffffff" : "2px solid transparent",
+                              cursor: "pointer",
+                              boxShadow: newAgentColor === colorItem.hex ? `0 0 8px ${colorItem.hex}` : "none",
+                              transition: "all 0.2s",
+                            }}
+                            title={colorItem.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Descrição */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Descrição / Instruções
-                </label>
-                <textarea
-                  placeholder="Descreva brevemente o propósito ou regras especiais deste agente..."
-                  value={newAgentDescription}
-                  onChange={(e) => setNewAgentDescription(e.target.value)}
-                  rows={3}
-                  style={{
-                    padding: "10px 12px",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 8,
-                    color: "#f8fafc",
-                    fontSize: "0.85rem",
-                    outline: "none",
-                    resize: "none",
-                    fontFamily: "inherit",
-                    transition: "all 0.2s",
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
-                  onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
-                />
-              </div>
-
-              {/* Acesso a Servidores MCP */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Acesso a Servidores MCP
-                </label>
-                {availableMcpServers.length === 0 ? (
-                  <p style={{ color: "#64748b", fontSize: "0.8rem", margin: "4px 0" }}>Nenhum servidor MCP cadastrado.</p>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 120, overflowY: "auto", background: "rgba(0,0,0,0.15)", borderRadius: 8, padding: 10 }}>
-                    {availableMcpServers.map((srv) => {
-                      const isChecked = newAgentMcpServers.includes(srv.id);
-                      return (
-                        <label key={srv.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "#e2e8f0", cursor: "pointer" }}>
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => {
-                              if (isChecked) {
-                                setNewAgentMcpServers(newAgentMcpServers.filter((id) => id !== srv.id));
-                              } else {
-                                setNewAgentMcpServers([...newAgentMcpServers, srv.id]);
-                              }
-                            }}
-                            style={{ cursor: "pointer", accentColor: "#7c3aed" }}
-                          />
-                          <span>{srv.name || srv.id}</span>
-                        </label>
-                      );
-                    })}
+                {/* COLUNA DIREITA */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* Descrição */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+                    <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Descrição / Instruções
+                    </label>
+                    <textarea
+                      placeholder="Descreva brevemente o propósito ou regras especiais deste agente..."
+                      value={newAgentDescription}
+                      onChange={(e) => setNewAgentDescription(e.target.value)}
+                      style={{
+                        flex: 1,
+                        minHeight: 120,
+                        padding: "10px 12px",
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 8,
+                        color: "#f8fafc",
+                        fontSize: "0.85rem",
+                        outline: "none",
+                        resize: "none",
+                        fontFamily: "inherit",
+                        transition: "all 0.2s",
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = "#7c3aed"}
+                      onBlur={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
+                    />
                   </div>
-                )}
+
+                  {/* Acesso a Servidores MCP */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Acesso a Servidores MCP
+                    </label>
+                    {availableMcpServers.length === 0 ? (
+                      <p style={{ color: "#64748b", fontSize: "0.8rem", margin: "4px 0" }}>Nenhum servidor MCP cadastrado.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 150, overflowY: "auto", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: 8, padding: 10 }}>
+                        {availableMcpServers.map((srv) => {
+                          const isChecked = newAgentMcpServers.includes(srv.id);
+                          return (
+                            <label key={srv.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "#e2e8f0", cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  if (isChecked) {
+                                    setNewAgentMcpServers(newAgentMcpServers.filter((id) => id !== srv.id));
+                                  } else {
+                                    setNewAgentMcpServers([...newAgentMcpServers, srv.id]);
+                                  }
+                                }}
+                                style={{ cursor: "pointer", accentColor: "#7c3aed" }}
+                              />
+                              <span>{srv.name || srv.id}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Ações */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24 }}>
+            {/* Footer (fixo embaixo) */}
+            <div style={{ padding: "16px 24px 24px 24px", borderTop: "1px solid rgba(255, 255, 255, 0.05)", display: "flex", justifyContent: "flex-end", gap: 10 }}>
               <button
                 type="button"
                 onClick={closeModal}
                 style={{
                   padding: "8px 16px",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "transparent",
+                  border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 8,
-                  color: "#e2e8f0",
-                  fontSize: "0.8rem",
+                  color: "#f8fafc",
+                  fontSize: "0.85rem",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                }}
               >
                 Cancelar
               </button>
@@ -2623,7 +1774,7 @@ export default function WorkspacePage() {
                   border: "none",
                   borderRadius: 8,
                   color: "white",
-                  fontSize: "0.8rem",
+                  fontSize: "0.85rem",
                   fontWeight: 700,
                   cursor: "pointer",
                   transition: "all 0.2s",
@@ -2632,7 +1783,7 @@ export default function WorkspacePage() {
                 onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
               >
-                {editingAgent ? "Salvar Alterações" : "Adicionar"}
+                {editingAgent ? "Salvar Alterações" : "Criar Agente"}
               </button>
             </div>
           </div>

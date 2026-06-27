@@ -1,13 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProviderKeys } from '@/lib/config/providers';
+import { ai } from '@/lib/genkit';
+import { getMcpTools } from '@/lib/mcp/registry';
+import { searchKnowledge } from '@/lib/rag/store';
+import { z } from 'genkit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const consultarBaseConhecimentoTool = ai.defineTool(
+  {
+    name: 'consultarBaseConhecimento',
+    description: 'Consulta a base de conhecimento local do ManagerAI para buscar documentos, manuais, diretrizes e informações fornecidas previamente pelo usuário.',
+    inputSchema: z.object({
+      query: z.string().describe('Frase ou termos de busca para pesquisar semanticamente no banco de conhecimento'),
+    }),
+    outputSchema: z.string(),
+  },
+  async ({ query }) => {
+    try {
+      const results = await searchKnowledge(query, 3, 0.45);
+      if (results.length === 0) {
+        return 'Nenhum resultado relevante encontrado na base de conhecimento local.';
+      }
+      return results
+        .map((doc) => `[Documento: ${doc.title} (Relevância: ${(doc.score * 100).toFixed(1)}%)]\n${doc.content}`)
+        .join('\n\n---\n\n');
+    } catch (error: any) {
+      console.error('Erro ao consultar base de conhecimento:', error);
+      return `Erro ao consultar a base de conhecimento: ${error.message}`;
+    }
+  }
+);
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, systemPrompt, provider, model } = body;
+    const { message, systemPrompt, provider, model, mcpServers } = body;
 
     if (!message || !provider || !model) {
       return NextResponse.json({ error: 'Campos message, provider e model são obrigatórios.' }, { status: 400 });
@@ -26,27 +55,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (provider === 'google') {
-      const geminiModel = model.replace('googleai/', '');
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `Instruções do Sistema:\n${systemPrompt}\n\nMensagem do Usuário: ${message}` }]
-            }
-          ]
-        })
+      // Configura a chave de API dinamicamente no processo
+      process.env.GEMINI_API_KEY = apiKey;
+
+      // Carregar ferramentas MCP autorizadas para este agente
+      const allowedServers = mcpServers || [];
+      const agentMcpTools = await getMcpTools(allowedServers);
+
+      const response = await ai.generate({
+        model: model || 'googleai/gemini-2.5-pro',
+        system: systemPrompt,
+        prompt: message,
+        tools: [...agentMcpTools, consultarBaseConhecimentoTool],
       });
-      if (response.ok) {
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sem resposta.";
-        return NextResponse.json({ response: text });
-      } else {
-        const errText = await response.text();
-        throw new Error(`Google API error: ${errText}`);
-      }
+
+      return NextResponse.json({ response: response.text });
     } else if (provider === 'openai') {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',

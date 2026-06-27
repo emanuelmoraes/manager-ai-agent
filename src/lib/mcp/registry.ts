@@ -4,6 +4,7 @@ import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { ai } from "@/lib/genkit";
 import fs from 'fs';
 import path from 'path';
+import { z } from 'genkit';
 
 // Keep references to connected clients
 const mcpClients: Record<string, Client> = {};
@@ -75,6 +76,60 @@ export async function initializeMcpServers(force: boolean = false) {
   initialized = true;
 }
 
+function jsonSchemaToZod(schema: any): z.ZodTypeAny {
+  if (!schema) return z.any();
+
+  // If it's a string type
+  if (schema.type === 'string') {
+    let zString = z.string();
+    if (schema.description) zString = zString.describe(schema.description);
+    return zString;
+  }
+
+  // If it's a number/integer type
+  if (schema.type === 'number' || schema.type === 'integer') {
+    let zNumber = z.number();
+    if (schema.description) zNumber = zNumber.describe(schema.description);
+    return zNumber;
+  }
+
+  // If it's a boolean type
+  if (schema.type === 'boolean') {
+    let zBoolean = z.boolean();
+    if (schema.description) zBoolean = zBoolean.describe(schema.description);
+    return zBoolean;
+  }
+
+  // If it's an array type
+  if (schema.type === 'array') {
+    let zArray = z.array(jsonSchemaToZod(schema.items));
+    if (schema.description) zArray = zArray.describe(schema.description);
+    return zArray;
+  }
+
+  // If it's an object type
+  if (schema.type === 'object') {
+    const shape: Record<string, z.ZodTypeAny> = {};
+    const properties = schema.properties || {};
+    const required = schema.required || [];
+
+    for (const [key, value] of Object.entries(properties)) {
+      let propZod = jsonSchemaToZod(value);
+      if (!required.includes(key)) {
+        propZod = propZod.optional();
+      }
+      shape[key] = propZod;
+    }
+
+    let zObject = z.object(shape);
+    if (schema.description) zObject = zObject.describe(schema.description) as any;
+    return zObject;
+  }
+
+  // Default fallback
+  return z.any();
+}
+
 /**
  * Loads all tools from connected MCP servers and maps them to Genkit tools.
  */
@@ -100,9 +155,7 @@ export async function getMcpTools(allowedServerIds?: string[]) {
           {
             name: toolName,
             description: `[Fonte: ${serverId}] ${tool.description || "Ferramenta MCP"}`,
-            // Pass the raw JSON schema provided by the MCP server
-            // Genkit can accept JSON schemas directly if we cast them
-            inputSchema: tool.inputSchema as any,
+            inputSchema: jsonSchemaToZod(tool.inputSchema),
           },
           async (input) => {
             console.log(`[MCP] Executando ${toolName}...`);
