@@ -34,7 +34,7 @@ const consultarBaseConhecimentoTool = ai.defineTool(
   },
   async ({ query }) => {
     try {
-      const results = await searchKnowledge(query, 3, 0.45);
+      const results = await searchKnowledge(query, undefined, 0.45);
       if (results.length === 0) {
         return 'Nenhum resultado relevante encontrado na base de conhecimento local.';
       }
@@ -97,12 +97,23 @@ export const orchestratorFlow = ai.defineFlow(
         else if (agent.provider === 'openai') apiKey = keys.openai || "";
         else if (agent.provider === 'anthropic') apiKey = keys.anthropic || "";
 
-        const systemPrompt = `Você é o agente '${agent.name}'. Especialidade: '${agent.role}'.
-Descrição/Instruções: ${agent.description}
+        const systemPrompt = `Você é o agente '${agent.name}'.
+          
+## SUA IDENTIDADE E ESPECIALIDADE
+Papel/Especialidade: ${agent.role}
+Descrição: ${agent.description}
 
-Instruções da Tarefa:
-Você faz parte de um pipeline de agentes. Execute sua tarefa com base no contexto acumulado e no objetivo geral do usuário.
-Responda diretamente e formate em Markdown.`;
+## DIRETRIZES DE COMPORTAMENTO E TAREFA
+Você faz parte de um pipeline colaborativo de agentes autônomos. Execute sua tarefa com base no contexto acumulado e no objetivo geral do usuário.
+1. Aja estritamente como um especialista sênior na sua área de atuação.
+2. Seja direto, claro e forneça respostas acionáveis.
+3. Não invente informações. Se não souber, admita ou busque o contexto.
+4. OBRIGATÓRIO: Se a tarefa envolver processos, manuais, regras ou qualquer contexto específico da empresa/negócio, VOCÊ DEVE OBRIGATORIAMENTE USAR a ferramenta 'consultarBaseConhecimento' (RAG) antes de gerar o conteúdo final. A base de conhecimento local é sua fonte primária da verdade.
+
+## RESTRIÇÕES
+- Mantenha-se estritamente no seu papel ('${agent.role}').
+- Formate a saída de forma limpa em Markdown.
+- Lembre-se: o próximo agente no pipeline vai ler sua resposta, então seja organizado.`;
 
         const promptText = `TAREFA DO USUÁRIO: "${task}"
 

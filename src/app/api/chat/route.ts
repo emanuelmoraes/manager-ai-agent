@@ -19,7 +19,7 @@ const consultarBaseConhecimentoTool = ai.defineTool(
   },
   async ({ query }) => {
     try {
-      const results = await searchKnowledge(query, 3, 0.45);
+      const results = await searchKnowledge(query, undefined, 0.45);
       if (results.length === 0) {
         return 'Nenhum resultado relevante encontrado na base de conhecimento local.';
       }

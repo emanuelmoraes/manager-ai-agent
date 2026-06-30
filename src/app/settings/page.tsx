@@ -24,6 +24,8 @@ export default function SettingsPage() {
   const [newDoc, setNewDoc] = useState({ title: "", content: "" });
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [indexing, setIndexing] = useState(false);
+  const [ragLimit, setRagLimit] = useState(5);
+  const [savingRagLimit, setSavingRagLimit] = useState(false);
 
   // Controle de Tabs e Mensagens
   const [activeTab, setActiveTab] = useState<SettingsTab>("keys");
@@ -226,10 +228,35 @@ export default function SettingsPage() {
       if (data.success) {
         setDocs(data.data);
       }
+      
+      const configRes = await fetch("/api/settings/rag");
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        if (configData.success && configData.data) {
+          setRagLimit(configData.data.searchLimit || 5);
+        }
+      }
     } catch (error) {
       console.error("Erro ao carregar documentos:", error);
     } finally {
       setLoadingDocs(false);
+    }
+  };
+
+  const handleSaveRagLimit = async () => {
+    setSavingRagLimit(true);
+    try {
+      const res = await fetch("/api/settings/rag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ searchLimit: ragLimit })
+      });
+      if (res.ok) alert("Limite de busca atualizado com sucesso!");
+      else alert("Erro ao salvar o limite de busca.");
+    } catch (e) {
+      alert("Erro de conexão ao salvar limite de busca.");
+    } finally {
+      setSavingRagLimit(false);
     }
   };
 
@@ -507,7 +534,53 @@ export default function SettingsPage() {
 
       {/* TAB CONTENT: KNOWLEDGE BASE (RAG) */}
       {activeTab === "knowledge" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 30, flex: 1, minHeight: 400 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 30, flex: 1 }}>
+          
+          {/* TOP PANEL: Configurações Globais RAG */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 24, padding: "20px 30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 600, margin: "0 0 8px 0", color: "#e2e8f0" }}>Limite de Busca (Top-K)</h2>
+              <p style={{ fontSize: "0.82rem", color: "#94a3b8", margin: 0, maxWidth: 400 }}>
+                Define quantos fragmentos de documentos o Agente poderá recuperar do banco em uma única consulta.
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 15 }}>
+              <input 
+                type="number" 
+                min="1" 
+                max="20"
+                value={ragLimit}
+                onChange={(e) => setRagLimit(parseInt(e.target.value) || 5)}
+                style={{
+                  background: "rgba(0,0,0,0.2)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 12,
+                  padding: "10px 15px",
+                  color: "#f8fafc",
+                  width: 80,
+                  fontSize: "0.95rem"
+                }}
+              />
+              <button 
+                onClick={handleSaveRagLimit}
+                disabled={savingRagLimit}
+                style={{
+                  background: "#a78bfa",
+                  color: "#1e1b4b",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "10px 20px",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                {savingRagLimit ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 30, flex: 1, minHeight: 400 }}>
+
           
           {/* LEFT PANEL: Document list */}
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 24, padding: 30, display: "flex", flexDirection: "column", gap: 20 }}>
@@ -691,6 +764,7 @@ export default function SettingsPage() {
               </button>
             </form>
           </div>
+        </div>
         </div>
       )}
 
