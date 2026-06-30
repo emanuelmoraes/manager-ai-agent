@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useToast } from "@/hooks/useToast";
 
 interface KnowledgeDoc {
   id: string;
@@ -29,7 +30,7 @@ export default function SettingsPage() {
 
   // Controle de Tabs e Mensagens
   const [activeTab, setActiveTab] = useState<SettingsTab>("keys");
-  const [message, setMessage] = useState({ text: "", type: "" });
+  const { notifySuccess, notifyError, notifyWarning } = useToast();
 
   // Estado para MCP
   interface McpServer {
@@ -99,14 +100,13 @@ export default function SettingsPage() {
     if (!mcpForm.id.trim()) return;
 
     setSavingMcp(true);
-    setMessage({ text: "", type: "" });
     try {
       let parsedEnv = {};
       if (mcpForm.env.trim()) {
         try {
           parsedEnv = JSON.parse(mcpForm.env);
         } catch (err) {
-          setMessage({ text: "Variáveis de Ambiente JSON inválidas.", type: "error" });
+          notifyError("Variáveis de Ambiente JSON inválidas.");
           setSavingMcp(false);
           return;
         }
@@ -140,24 +140,22 @@ export default function SettingsPage() {
           args: "",
           env: "",
         });
-        setMessage({ text: editingId ? "Servidor MCP atualizado com sucesso!" : "Servidor MCP cadastrado com sucesso!", type: "success" });
         setEditingId(null);
+        notifySuccess(editingId ? "Servidor MCP atualizado com sucesso!" : "Servidor MCP cadastrado com sucesso!");
       } else {
-        setMessage({ text: data.error || "Erro ao salvar servidor MCP.", type: "error" });
+        notifyError(data.error || "Erro ao salvar servidor MCP.");
       }
     } catch (error) {
       console.error(error);
-      setMessage({ text: "Erro ao cadastrar servidor MCP.", type: "error" });
+      notifyError("Erro ao cadastrar servidor MCP.");
     } finally {
       setSavingMcp(false);
-      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
     }
   };
 
   const handleDeleteMcpServer = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este servidor MCP?")) return;
 
-    setMessage({ text: "", type: "" });
     try {
       const res = await fetch(`/api/settings/mcp/${id}`, {
         method: "DELETE",
@@ -165,15 +163,13 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.success) {
         setMcpServers((prev) => prev.filter((s) => s.id !== id));
-        setMessage({ text: "Servidor MCP excluído com sucesso!", type: "success" });
+        notifySuccess("Servidor MCP excluído com sucesso!");
       } else {
-        setMessage({ text: data.error || "Erro ao excluir servidor MCP.", type: "error" });
+        notifyError(data.error || "Erro ao excluir servidor MCP.");
       }
     } catch (error) {
       console.error(error);
-      setMessage({ text: "Erro ao excluir servidor.", type: "error" });
-    } finally {
-      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
+      notifyError("Erro ao excluir servidor.");
     }
   };
 
@@ -196,12 +192,12 @@ export default function SettingsPage() {
       const res = await fetch(`/api/settings/mcp/${id}/test`);
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Conectado com sucesso ao servidor MCP!\n\nFerramentas Disponíveis (${data.tools.length}):\n${data.tools.map((t: any) => `- ${t.name}: ${t.description || "Sem descrição"}`).join("\n")}`);
+        notifySuccess(`Conectado com sucesso ao servidor MCP!\nFerramentas: ${data.tools.length}`);
       } else {
-        alert(`❌ Erro ao testar conexão com o servidor:\n\n${data.error}`);
+        notifyError(`Erro ao testar conexão com o servidor: ${data.error}`);
       }
     } catch (error: any) {
-      alert(`❌ Erro na requisição de teste:\n\n${error.message}`);
+      notifyError(`Erro na requisição de teste: ${error.message}`);
     } finally {
       setTestingMcp(null);
     }
@@ -251,10 +247,10 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ searchLimit: ragLimit })
       });
-      if (res.ok) alert("Limite de busca atualizado com sucesso!");
-      else alert("Erro ao salvar o limite de busca.");
+      if (res.ok) notifySuccess("Limite de busca atualizado com sucesso!");
+      else notifyError("Erro ao salvar o limite de busca.");
     } catch (e) {
-      alert("Erro de conexão ao salvar limite de busca.");
+      notifyError("Erro de conexão ao salvar limite de busca.");
     } finally {
       setSavingRagLimit(false);
     }
@@ -262,7 +258,6 @@ export default function SettingsPage() {
 
   const handleSaveKeys = async () => {
     setSaving(true);
-    setMessage({ text: "", type: "" });
     try {
       const res = await fetch("/api/settings/keys", {
         method: "POST",
@@ -280,12 +275,11 @@ export default function SettingsPage() {
       }));
 
       setKeys({ google: "", openai: "", anthropic: "" });
-      setMessage({ text: "Chaves de API salvas com sucesso!", type: "success" });
+      notifySuccess("Chaves de API salvas com sucesso!");
     } catch (error) {
-      setMessage({ text: "Erro ao salvar as chaves.", type: "error" });
+      notifyError("Erro ao salvar as chaves.");
     } finally {
       setSaving(false);
-      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
     }
   };
 
@@ -294,7 +288,6 @@ export default function SettingsPage() {
     if (!newDoc.title.trim() || !newDoc.content.trim()) return;
 
     setIndexing(true);
-    setMessage({ text: "", type: "" });
     try {
       const res = await fetch("/api/settings/knowledge", {
         method: "POST",
@@ -307,16 +300,15 @@ export default function SettingsPage() {
       if (data.success) {
         setDocs((prev) => [...prev, data.data]);
         setNewDoc({ title: "", content: "" });
-        setMessage({ text: "Documento indexado com sucesso na base vetorial!", type: "success" });
+        notifySuccess("Documento indexado com sucesso na base vetorial!");
       } else {
-        setMessage({ text: data.error || "Erro ao indexar documento.", type: "error" });
+        notifyError(data.error || "Erro ao indexar documento.");
       }
     } catch (error) {
       console.error(error);
-      setMessage({ text: "Erro na indexação.", type: "error" });
+      notifyError("Erro na indexação.");
     } finally {
       setIndexing(false);
-      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
     }
   };
 
@@ -325,7 +317,7 @@ export default function SettingsPage() {
     if (!file) return;
 
     if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
-      alert("Por favor, selecione apenas arquivos do tipo texto (.txt).");
+      notifyError("Por favor, selecione apenas arquivos do tipo texto (.txt).");
       e.target.value = "";
       return;
     }
@@ -354,15 +346,13 @@ export default function SettingsPage() {
 
       if (data.success) {
         setDocs((prev) => prev.filter((d) => d.id !== id));
-        setMessage({ text: "Documento excluído com sucesso da base.", type: "success" });
+        notifySuccess("Documento excluído com sucesso da base.");
       } else {
-        setMessage({ text: data.error || "Erro ao excluir documento.", type: "error" });
+        notifyError(data.error || "Erro ao excluir documento.");
       }
     } catch (error) {
       console.error(error);
-      setMessage({ text: "Erro ao excluir documento.", type: "error" });
-    } finally {
-      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
+      notifyError("Erro ao excluir documento.");
     }
   };
 
@@ -404,13 +394,6 @@ export default function SettingsPage() {
           Voltar ao Workspace
         </Link>
       </header>
-
-      {/* NOTIFICATION MESSAGE */}
-      {message.text && (
-        <div style={{ padding: "16px 20px", borderRadius: 12, background: message.type === "success" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${message.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`, color: message.type === "success" ? "#4ade80" : "#f87171", display: "flex", alignItems: "center", gap: 10, animation: "slide-in 0.2s ease" }}>
-          {message.type === "success" ? "✓" : "⚠"} {message.text}
-        </div>
-      )}
 
       {/* TABS */}
       <div style={{ display: "flex", gap: 24, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 12 }}>

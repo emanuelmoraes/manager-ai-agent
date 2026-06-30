@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { getAgentsFromFirebase, getPipelineFromFirebase, getSessionsFromFirebase, getMessagesFromFirebase, syncAgentsToFirebase, deleteAgentFromFirebase, syncSessionToFirebase, deleteSessionFromFirebase, syncMessagesToFirebase, deleteMessagesFromFirebase, syncPipelineToFirebase } from "@/lib/firebase/sync";
 import Link from "next/link";
+import { useToast } from "@/hooks/useToast";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 type AgentStatus = "idle" | "running" | "done" | "error";
@@ -289,8 +290,11 @@ export default function WorkspacePage() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [totalTokens] = useState<number>(0);
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const logsEndRef = useRef<HTMLDivElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  const { notifyWarning, notifyError } = useToast();
 
   const [agents, setAgents] = useState<Agent[]>(AGENTS);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -749,7 +753,7 @@ Descrição: ${agent.description}
   const executeWorkflow = async () => {
     if (!taskInput.trim() || isRunning) return;
     if (pipeline.length === 0) {
-      alert("Por favor, adicione pelo menos um agente ao seu pipeline na aba 'Pipeline' antes de executar.");
+      notifyWarning("Por favor, adicione pelo menos um agente ao seu pipeline na aba 'Pipeline' antes de executar.");
       return;
     }
     setIsRunning(true);
