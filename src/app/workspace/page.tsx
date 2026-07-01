@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { getAgentsFromFirebase, getPipelineFromFirebase, getSessionsFromFirebase, getMessagesFromFirebase, syncAgentsToFirebase, deleteAgentFromFirebase, syncSessionToFirebase, deleteSessionFromFirebase, syncMessagesToFirebase, deleteMessagesFromFirebase, syncPipelineToFirebase } from "@/lib/firebase/sync";
 import Link from "next/link";
 import { useToast } from "@/hooks/useToast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 type AgentStatus = "idle" | "running" | "done" | "error";
@@ -373,6 +375,13 @@ export default function WorkspacePage() {
       })
       .catch((err) => console.error("Error loading MCP servers", err));
   }, []);
+
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, activeSessionId, selectedAgent, activeTab]);
 
   const isMounted = useRef(false);
   useEffect(() => {
@@ -1574,7 +1583,11 @@ Descrição: ${agent.description}
                                   wordBreak: "break-word"
                                 }}
                               >
-                                {msg.content}
+                                <div className="markdown-body">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {msg.content}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
                               <span style={{ fontSize: "0.6rem", color: "#475569", alignSelf: isUser ? "flex-end" : "flex-start" }}>
                                 {msg.timestamp}
@@ -1598,6 +1611,7 @@ Descrição: ${agent.description}
                           <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Pensando...</span>
                         </div>
                       )}
+                      <div ref={chatEndRef} />
                     </div>
 
                     {/* Chat input form */}
