@@ -1,11 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
 import mammoth from "mammoth";
-import * as pdfjsLib from "pdfjs-dist";
-
-// Setting worker path for PDF.js
-if (typeof window !== "undefined") {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-}
 
 interface KnowledgeDoc {
   id: string;
@@ -53,6 +47,9 @@ export function RAGTab({
       let extractedText = "";
 
       if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+        
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
         const numPages = pdf.numPages;
