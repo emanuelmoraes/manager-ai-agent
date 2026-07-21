@@ -100,7 +100,7 @@ export default function WorkspacePage() {
       else localStorage.removeItem("manager_ai_selected_agent");
 
       localStorage.setItem("manager_ai_open_sessions", JSON.stringify(openSessionIds));
-      
+
       if (activeSessionId) localStorage.setItem("manager_ai_active_session", activeSessionId);
       else localStorage.removeItem("manager_ai_active_session");
     } else {
@@ -244,7 +244,7 @@ export default function WorkspacePage() {
     setChatSessions(updated);
     localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(updated));
     const session = updated.find(s => s.id === sessionId);
-    if(session) syncSessionToFirebase(session);
+    if (session) syncSessionToFirebase(session);
   };
 
   const handleDeleteSession = (sessionId: string) => {
@@ -326,13 +326,13 @@ export default function WorkspacePage() {
 
       if (!response.ok) throw new Error('Falha na resposta do agente.');
       const data = await response.json();
-      
+
       const modelMsg: ChatMessage = {
         role: "model",
         content: data.response,
         timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
       };
-      
+
       const finalHistory = [...updatedHistory, modelMsg];
       setChatMessages(prev => ({ ...prev, [activeSessionId]: finalHistory }));
       localStorage.setItem(`manager_ai_chat_messages_${activeSessionId}`, JSON.stringify(finalHistory));
@@ -366,7 +366,7 @@ export default function WorkspacePage() {
       <TopBar />
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <AgentSidebar 
+        <AgentSidebar
           agents={agents}
           selectedAgent={selectedAgent}
           setSelectedAgent={setSelectedAgent}

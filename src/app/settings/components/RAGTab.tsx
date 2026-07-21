@@ -49,7 +49,7 @@ export function RAGTab({
       if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-        
+
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
         const numPages = pdf.numPages;
@@ -116,7 +116,7 @@ export function RAGTab({
     <div style={{ display: "flex", gap: 40, width: "100%", padding: "40px 0", maxWidth: 1200, margin: "0 auto" }}>
       {/* LEFT COLUMN: Indexed Docs & Settings */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 32 }}>
-        
+
         {/* Top-K Setting */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -358,7 +358,7 @@ export function RAGTab({
                   {extracting ? "Extraindo texto..." : "Arraste e solte arquivos aqui"}
                 </span>
                 <span style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 4, display: "block" }}>
-                  PDF, TXT, DOCX (Máx 50MB)
+                  TXT (Máx 50MB)
                 </span>
               </div>
               <button

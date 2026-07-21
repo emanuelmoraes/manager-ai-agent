@@ -132,6 +132,9 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
             system: systemPrompt,
             prompt: promptText,
             tools: [...agentMcpTools, consultarBaseConhecimentoTool],
+            config: {
+              apiKey: apiKey
+            }
           });
           agentOutput = response.text;
         } else if (agent.provider === 'openai' && apiKey) {

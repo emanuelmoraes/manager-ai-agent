@@ -63,10 +63,13 @@ export async function POST(req: NextRequest) {
       const agentMcpTools = await getMcpTools(allowedServers);
 
       const response = await ai.generate({
-        model: model || 'googleai/gemini-2.5-pro',
+        model: model,
         system: systemPrompt,
         prompt: message,
         tools: [...agentMcpTools, consultarBaseConhecimentoTool],
+        config: {
+          apiKey: apiKey
+        }
       });
 
       return NextResponse.json({ response: response.text });
