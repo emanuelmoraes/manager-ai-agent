@@ -68,10 +68,10 @@ export function RAGTab({
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         extractedText = result.value;
-      } else if (file.type === "text/plain" || file.name.endsWith(".txt")) {
+      } else if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
         extractedText = await file.text();
       } else {
-        alert("Formato não suportado. Use PDF, DOCX ou TXT.");
+        alert("Formato não suportado. Use PDF, DOCX, TXT ou MD.");
         setExtracting(false);
         return;
       }
@@ -358,7 +358,7 @@ export function RAGTab({
                   {extracting ? "Extraindo texto..." : "Arraste e solte arquivos aqui"}
                 </span>
                 <span style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 4, display: "block" }}>
-                  TXT (Máx 50MB)
+                  PDF, DOCX, TXT, MD (Máx 50MB)
                 </span>
               </div>
               <button
@@ -380,7 +380,7 @@ export function RAGTab({
                 type="file"
                 ref={fileInputRef}
                 style={{ display: "none" }}
-                accept=".pdf,.txt,.docx"
+                accept=".pdf,.txt,.docx,.md"
                 onChange={onFileChange}
               />
             </div>
