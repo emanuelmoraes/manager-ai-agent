@@ -55,9 +55,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (provider === 'google') {
-      // Configura a chave de API dinamicamente no processo
-      process.env.GEMINI_API_KEY = apiKey;
-
       // Carregar ferramentas MCP autorizadas para este agente
       const allowedServers = mcpServers || [];
       const agentMcpTools = await getMcpTools(allowedServers);

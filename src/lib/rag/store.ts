@@ -1,5 +1,6 @@
 import { ai } from '../genkit';
 import { adminDb } from '../firebase/admin';
+import { ensureGeminiApiKey } from '../genkit/keys';
 
 export interface Document {
   id: string;
@@ -89,6 +90,9 @@ function chunkText(text: string, maxChunkSize: number = 1500): string[] {
  * Adiciona um novo documento na base de dados, gerando seu embedding
  */
 export async function addDocument(title: string, content: string): Promise<Omit<Document, 'embedding'>> {
+  // Valida e garante que a variável oficial GEMINI_API_KEY está disponível
+  ensureGeminiApiKey();
+
   const parentId = Math.random().toString(36).substring(2, 9);
   const createdAt = new Date().toISOString();
   
@@ -195,6 +199,9 @@ import { getRagConfig } from '../config/rag';
  * Realiza pesquisa semântica por similaridade de cosseno na base de conhecimento local
  */
 export async function searchKnowledge(query: string, customLimit?: number, minScore: number = 0.45): Promise<SearchResult[]> {
+  // Valida e garante que a variável oficial GEMINI_API_KEY está disponível para embedding da busca
+  ensureGeminiApiKey();
+
   const docs = await getKnowledgeWithEmbeddings();
   if (docs.length === 0) {
     return [];

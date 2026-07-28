@@ -96,7 +96,15 @@ try {
 // 3. Montar o comando de Deploy
 console.log(`\n🚀 Passo 2: Publicando o serviço ${SERVICE_NAME} no Cloud Run...`);
 
-const deployCommand = `gcloud run deploy ${SERVICE_NAME} --image ${imageTag} --platform managed --region ${REGION} --allow-unauthenticated --port 8080`;
+let deployCommand = `gcloud run deploy ${SERVICE_NAME} --image ${imageTag} --platform managed --region ${REGION} --allow-unauthenticated --port 8080`;
+
+// Garantir injeção da variável de ambiente GEMINI_API_KEY no contêiner do Cloud Run
+if (envVars['GEMINI_API_KEY']) {
+  console.log('🔑 Injetando variável de ambiente GEMINI_API_KEY no Cloud Run...');
+  deployCommand += ` --update-env-vars="GEMINI_API_KEY=${envVars['GEMINI_API_KEY']}"`;
+} else {
+  console.warn('⚠️  AVISO CRÍTICO: GEMINI_API_KEY não foi encontrada em .env.local. As rotas que utilizam o Gemini Genkit poderão falhar no Cloud Run.');
+}
 
 try {
   execSync(deployCommand, { stdio: 'inherit' });
