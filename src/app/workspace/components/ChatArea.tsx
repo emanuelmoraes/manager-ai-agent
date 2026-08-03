@@ -19,6 +19,7 @@ interface ChatAreaProps {
   chatLoading: boolean;
   chatEndRef: React.RefObject<HTMLDivElement | null>;
   closeSessionTab: (sessionId: string, e: React.MouseEvent) => void;
+  isMobile?: boolean;
 }
 
 export function ChatArea({
@@ -35,6 +36,7 @@ export function ChatArea({
   chatLoading,
   chatEndRef,
   closeSessionTab,
+  isMobile = false,
 }: ChatAreaProps) {
   if (!activeSessionId) {
     return (
@@ -95,7 +97,7 @@ export function ChatArea({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        padding: "0 24px 24px 0",
+        padding: isMobile ? "0 12px 12px 12px" : "0 24px 24px 0",
       }}
     >
       <div
@@ -112,7 +114,7 @@ export function ChatArea({
           style={{
             flex: 1,
             overflowY: "auto",
-            padding: "20px 20px 20px 0",
+            padding: isMobile ? "12px 4px 12px 4px" : "20px 20px 20px 0",
             display: "flex",
             flexDirection: "column",
             gap: 24,
@@ -146,7 +148,7 @@ export function ChatArea({
                     alignItems: "flex-end",
                     gap: 12,
                     alignSelf: isUser ? "flex-end" : "flex-start",
-                    maxWidth: "80%",
+                    maxWidth: isMobile ? "92%" : "80%",
                   }}
                 >
                   {!isUser && ag && (
@@ -267,6 +269,7 @@ export function ChatArea({
             handleSendChatMessage={handleSendChatMessage}
             chatLoading={chatLoading}
             agentName={ag?.name || "Agent"}
+            isMobile={isMobile}
           />
         </div>
       </div>

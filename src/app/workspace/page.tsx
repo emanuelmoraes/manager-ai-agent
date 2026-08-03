@@ -22,6 +22,12 @@ export default function WorkspacePage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
+  // Responsive Sidebar States
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
@@ -45,6 +51,50 @@ export default function WorkspacePage() {
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const isMounted = useRef(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const savedSidebar = localStorage.getItem("manager_ai_sidebar_state");
+      if (savedSidebar) {
+        const parsed = JSON.parse(savedSidebar);
+        if (typeof parsed.collapsed === "boolean") setIsSidebarCollapsed(parsed.collapsed);
+        if (typeof parsed.width === "number" && parsed.width >= 220 && parsed.width <= 500) {
+          setSidebarWidth(parsed.width);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading sidebar state", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMounted.current) {
+      localStorage.setItem(
+        "manager_ai_sidebar_state",
+        JSON.stringify({
+          collapsed: isSidebarCollapsed,
+          width: sidebarWidth,
+        })
+      );
+    }
+  }, [isSidebarCollapsed, sidebarWidth]);
+
+  const handleToggleSidebar = () => {
+    if (isMobile) {
+      setIsMobileDrawerOpen((prev) => !prev);
+    } else {
+      setIsSidebarCollapsed((prev) => !prev);
+    }
+  };
 
   const getAgent = (id: string) => agents.find((a) => a.id === id);
 
@@ -236,6 +286,9 @@ export default function WorkspacePage() {
       setOpenSessionIds([...openSessionIds, newSession.id]);
     }
     setActiveSessionId(newSession.id);
+    if (isMobile) {
+      setIsMobileDrawerOpen(false);
+    }
   };
 
   const handleRenameSession = (sessionId: string, newTitle: string) => {
@@ -363,30 +416,54 @@ export default function WorkspacePage() {
         overflow: "hidden",
       }}
     >
-      <TopBar />
+      <TopBar
+        onToggleSidebar={handleToggleSidebar}
+        isSidebarCollapsed={isSidebarCollapsed}
+      />
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
         <AgentSidebar
           agents={agents}
           selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
+          setSelectedAgent={(id) => {
+            setSelectedAgent(id);
+            if (isMobile && id) setIsMobileDrawerOpen(false);
+          }}
           handleCreateSession={handleCreateSession}
           openEditModal={openEditModal}
           handleDeleteAgent={handleDeleteAgent}
           openCreateModal={openCreateModal}
           chatSessions={chatSessions}
           activeSessionId={activeSessionId}
-          setActiveSessionId={setActiveSessionId}
+          setActiveSessionId={(id) => {
+            setActiveSessionId(id);
+            if (isMobile && id) setIsMobileDrawerOpen(false);
+          }}
           openSessionIds={openSessionIds}
           setOpenSessionIds={setOpenSessionIds}
           handleRenameSession={handleRenameSession}
           handleDeleteSession={handleDeleteSession}
+          isMobile={isMobile}
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={setIsSidebarCollapsed}
+          isDrawerOpen={isMobileDrawerOpen}
+          setIsDrawerOpen={setIsMobileDrawerOpen}
+          sidebarWidth={sidebarWidth}
+          setSidebarWidth={setSidebarWidth}
         />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
           {/* SESSIONS TABS */}
           {openSessionIds.length > 0 && (
-            <div style={{ display: "flex", gap: 12, padding: "24px 24px 0", overflowX: "auto" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                padding: isMobile ? "12px 12px 0" : "24px 24px 0",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
               {openSessionIds.map(sessionId => {
                 const session = chatSessions.find(s => s.id === sessionId);
                 if (!session) return null;
@@ -394,7 +471,10 @@ export default function WorkspacePage() {
                 return (
                   <div
                     key={sessionId}
-                    onClick={() => setActiveSessionId(sessionId)}
+                    onClick={() => {
+                      setActiveSessionId(sessionId);
+                      if (isMobile) setIsMobileDrawerOpen(false);
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -409,6 +489,7 @@ export default function WorkspacePage() {
                       fontSize: "0.85rem",
                       fontWeight: isActive ? 600 : 400,
                       transition: "all 0.2s",
+                      flexShrink: 0,
                     }}
                   >
                     <span>{session.title}</span>
@@ -447,6 +528,7 @@ export default function WorkspacePage() {
             chatLoading={chatLoading}
             chatEndRef={chatEndRef}
             closeSessionTab={closeSessionTab}
+            isMobile={isMobile}
           />
         </div>
       </div>

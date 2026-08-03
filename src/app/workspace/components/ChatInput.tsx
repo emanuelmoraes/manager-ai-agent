@@ -6,6 +6,7 @@ interface ChatInputProps {
   handleSendChatMessage: () => void;
   chatLoading: boolean;
   agentName: string;
+  isMobile?: boolean;
 }
 
 export function ChatInput({
@@ -14,6 +15,7 @@ export function ChatInput({
   handleSendChatMessage,
   chatLoading,
   agentName,
+  isMobile = false,
 }: ChatInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +51,7 @@ export function ChatInput({
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: 16,
-        padding: "8px",
+        padding: isMobile ? "6px" : "8px",
         backdropFilter: "blur(12px)",
       }}
     >
@@ -78,7 +80,7 @@ export function ChatInput({
           border: "none",
           padding: "12px 12px",
           color: "#f8fafc",
-          fontSize: "0.9rem",
+          fontSize: isMobile ? "16px" : "0.95rem",
           outline: "none",
           resize: "none",
           fontFamily: "inherit",
@@ -178,7 +180,8 @@ export function ChatInput({
           onClick={handleSendChatMessage}
           disabled={chatLoading || !chatInput.trim()}
           style={{
-            padding: "8px 16px",
+            padding: isMobile ? "10px 18px" : "8px 16px",
+            minHeight: 38,
             background: chatLoading || !chatInput.trim() ? "rgba(124,58,237,0.2)" : "linear-gradient(135deg, #a78bfa, #8b5cf6)",
             border: "none",
             borderRadius: 8,
