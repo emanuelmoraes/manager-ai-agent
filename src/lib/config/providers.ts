@@ -4,6 +4,8 @@ export interface ProviderKeys {
   google?: string;
   openai?: string;
   anthropic?: string;
+  deepseek?: string;
+  grok?: string;
 }
 
 export async function getProviderKeys(): Promise<ProviderKeys> {

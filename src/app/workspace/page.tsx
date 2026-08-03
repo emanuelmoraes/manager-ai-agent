@@ -12,7 +12,7 @@ import {
   syncMessagesToFirebase,
   deleteMessagesFromFirebase,
 } from "@/lib/firebase/sync";
-import { Agent, ChatSession, ChatMessage } from "./types";
+import { Agent, ChatSession, ChatMessage, AiProviderId } from "./types";
 import { TopBar } from "./components/TopBar";
 import { AgentSidebar } from "./components/AgentSidebar";
 import { ChatArea } from "./components/ChatArea";
@@ -30,7 +30,7 @@ export default function WorkspacePage() {
   const [newAgentIcon, setNewAgentIcon] = useState("🤖");
   const [newAgentColor, setNewAgentColor] = useState("#a78bfa");
   const [newAgentDescription, setNewAgentDescription] = useState("");
-  const [newAgentProvider, setNewAgentProvider] = useState<"google" | "openai" | "anthropic">("google");
+  const [newAgentProvider, setNewAgentProvider] = useState<AiProviderId>("google");
   const [newAgentModel, setNewAgentModel] = useState("googleai/gemini-2.5-pro");
   const [newAgentMcpServers, setNewAgentMcpServers] = useState<string[]>([]);
   const [availableMcpServers, setAvailableMcpServers] = useState<{ id: string; name?: string }[]>([]);

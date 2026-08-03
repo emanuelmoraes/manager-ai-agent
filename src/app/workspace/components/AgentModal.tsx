@@ -1,5 +1,5 @@
 import React from "react";
-import { Agent } from "../types";
+import { Agent, AiProviderId } from "../types";
 
 interface AgentModalProps {
   isModalOpen: boolean;
@@ -15,8 +15,8 @@ interface AgentModalProps {
   setNewAgentColor: (v: string) => void;
   newAgentDescription: string;
   setNewAgentDescription: (v: string) => void;
-  newAgentProvider: "google" | "openai" | "anthropic";
-  setNewAgentProvider: (v: "google" | "openai" | "anthropic") => void;
+  newAgentProvider: AiProviderId;
+  setNewAgentProvider: (v: AiProviderId) => void;
   newAgentModel: string;
   setNewAgentModel: (v: string) => void;
   newAgentMcpServers: string[];
@@ -182,11 +182,13 @@ export function AgentModal({
                   <select
                     value={newAgentProvider}
                     onChange={(e) => {
-                      const prov = e.target.value as "google" | "openai" | "anthropic";
+                      const prov = e.target.value as AiProviderId;
                       setNewAgentProvider(prov);
                       if (prov === "google") setNewAgentModel("googleai/gemini-2.5-pro");
                       else if (prov === "openai") setNewAgentModel("gpt-4o");
                       else if (prov === "anthropic") setNewAgentModel("claude-3-5-sonnet-20241022");
+                      else if (prov === "deepseek") setNewAgentModel("deepseek-chat");
+                      else if (prov === "grok") setNewAgentModel("grok-2-1212");
                     }}
                     style={{
                       padding: "10px 12px",
@@ -201,6 +203,8 @@ export function AgentModal({
                     <option value="google" style={{ background: "#110c1c" }}>Google Gemini</option>
                     <option value="openai" style={{ background: "#110c1c" }}>OpenAI</option>
                     <option value="anthropic" style={{ background: "#110c1c" }}>Anthropic</option>
+                    <option value="deepseek" style={{ background: "#110c1c" }}>DeepSeek</option>
+                    <option value="grok" style={{ background: "#110c1c" }}>Grok (xAI)</option>
                   </select>
                 </div>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -234,6 +238,18 @@ export function AgentModal({
                       <>
                         <option value="claude-3-5-sonnet-20241022" style={{ background: "#110c1c" }}>claude-3-5-sonnet-20241022</option>
                         <option value="claude-3-5-haiku-20241022" style={{ background: "#110c1c" }}>claude-3-5-haiku-20241022</option>
+                      </>
+                    )}
+                    {newAgentProvider === "deepseek" && (
+                      <>
+                        <option value="deepseek-chat" style={{ background: "#110c1c" }}>deepseek-chat (V3)</option>
+                        <option value="deepseek-reasoner" style={{ background: "#110c1c" }}>deepseek-reasoner (R1)</option>
+                      </>
+                    )}
+                    {newAgentProvider === "grok" && (
+                      <>
+                        <option value="grok-2-1212" style={{ background: "#110c1c" }}>grok-2-1212</option>
+                        <option value="grok-beta" style={{ background: "#110c1c" }}>grok-beta</option>
                       </>
                     )}
                   </select>

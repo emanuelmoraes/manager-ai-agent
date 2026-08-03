@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
     if (provider === 'google') apiKey = keys.google || process.env.GEMINI_API_KEY || "";
     else if (provider === 'openai') apiKey = keys.openai || "";
     else if (provider === 'anthropic') apiKey = keys.anthropic || "";
+    else if (provider === 'deepseek') apiKey = keys.deepseek || process.env.DEEPSEEK_API_KEY || "";
+    else if (provider === 'grok') apiKey = keys.grok || process.env.GROK_API_KEY || process.env.XAI_API_KEY || "";
 
     if (!apiKey) {
       return NextResponse.json({
@@ -117,6 +119,52 @@ export async function POST(req: NextRequest) {
       } else {
         const errText = await response.text();
         throw new Error(`Anthropic API error: ${errText}`);
+      }
+    } else if (provider === 'deepseek') {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ]
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || "";
+        return NextResponse.json({ response: text });
+      } else {
+        const errText = await response.text();
+        throw new Error(`DeepSeek API error: ${errText}`);
+      }
+    } else if (provider === 'grok') {
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ]
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || "";
+        return NextResponse.json({ response: text });
+      } else {
+        const errText = await response.text();
+        throw new Error(`Grok (xAI) API error: ${errText}`);
       }
     }
 

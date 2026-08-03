@@ -6,6 +6,7 @@ import { TopNavigation } from "./components/TopNavigation";
 import { IAProvidersTab } from "./components/IAProvidersTab";
 import { RAGTab } from "./components/RAGTab";
 import { MCPTab } from "./components/MCPTab";
+import { AiProviderId } from "@/app/workspace/types";
 
 interface KnowledgeDoc {
   id: string;
@@ -33,8 +34,8 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("keys");
 
   // Providers State
-  const [keys, setKeys] = useState({ google: "", openai: "", anthropic: "" });
-  const [status, setStatus] = useState({ google: false, openai: false, anthropic: false });
+  const [keys, setKeys] = useState<Record<AiProviderId, string>>({ google: "", openai: "", anthropic: "", deepseek: "", grok: "" });
+  const [status, setStatus] = useState<Record<AiProviderId, boolean>>({ google: false, openai: false, anthropic: false, deepseek: false, grok: false });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -192,9 +193,11 @@ export default function SettingsPage() {
         google: keys.google ? true : prev.google,
         openai: keys.openai ? true : prev.openai,
         anthropic: keys.anthropic ? true : prev.anthropic,
+        deepseek: keys.deepseek ? true : prev.deepseek,
+        grok: keys.grok ? true : prev.grok,
       }));
 
-      setKeys({ google: "", openai: "", anthropic: "" });
+      setKeys({ google: "", openai: "", anthropic: "", deepseek: "", grok: "" });
       notifySuccess("Chaves de API salvas com sucesso!");
     } catch (error) {
       notifyError("Erro ao salvar as chaves.");

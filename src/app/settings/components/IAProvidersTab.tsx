@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
+import { AiProviderId } from "@/app/workspace/types";
 
 interface Provider {
-  id: "google" | "openai" | "anthropic";
+  id: AiProviderId;
   name: string;
   icon: React.ReactNode;
   color: string;
@@ -10,9 +11,9 @@ interface Provider {
 }
 
 interface IAProvidersTabProps {
-  keys: { google: string; openai: string; anthropic: string };
-  setKeys: React.Dispatch<React.SetStateAction<{ google: string; openai: string; anthropic: string }>>;
-  status: { google: boolean; openai: boolean; anthropic: boolean };
+  keys: Record<AiProviderId, string>;
+  setKeys: React.Dispatch<React.SetStateAction<Record<AiProviderId, string>>>;
+  status: Record<AiProviderId, boolean>;
   saving: boolean;
   handleSaveKeys: () => void;
 }
@@ -42,6 +43,22 @@ const PROVIDERS: Provider[] = [
     description: "Família Claude 3",
     link: "https://console.anthropic.com/settings/keys",
   },
+  {
+    id: "deepseek",
+    name: "DeepSeek",
+    icon: "🐋",
+    color: "#3b82f6",
+    description: "Modelos DeepSeek-V3 & R1",
+    link: "https://platform.deepseek.com/api_keys",
+  },
+  {
+    id: "grok",
+    name: "Grok (xAI)",
+    icon: "⚡",
+    color: "#f59e0b",
+    description: "Modelos Grok-2 & Vision",
+    link: "https://console.x.ai/",
+  },
 ];
 
 export function IAProvidersTab({
@@ -51,11 +68,6 @@ export function IAProvidersTab({
   saving,
   handleSaveKeys,
 }: IAProvidersTabProps) {
-  const [showKey, setShowKey] = useState<Record<string, boolean>>({});
-
-  const toggleShowKey = (id: string) => {
-    setShowKey((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 900, margin: "0 auto", width: "100%", padding: "40px 0" }}>
@@ -131,55 +143,24 @@ export function IAProvidersTab({
 
                   <div style={{ position: "relative" }}>
                     <input
-                      type={showKey[provider.id] ? "text" : "password"}
-                      placeholder={isConfigured ? "••••••••••••••••••••••••" : "Insira a chave da API (sk-...)"}
-                      value={keys[provider.id]}
+                      type="password"
+                      placeholder={isConfigured ? "•••••••••••••••••••••••• (Configurado - Digite para substituir)" : "Insira a chave da API (sk-...)"}
+                      value={keys[provider.id] || ""}
                       onChange={(e) => setKeys((prev) => ({ ...prev, [provider.id]: e.target.value }))}
                       style={{
                         width: "100%",
-                        padding: "12px 48px 12px 16px",
+                        padding: "12px 16px",
                         background: "rgba(255,255,255,0.04)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         borderRadius: 8,
                         color: "#f8fafc",
                         fontSize: "0.95rem",
                         outline: "none",
-                        fontFamily: showKey[provider.id] ? "monospace" : "inherit",
                         transition: "border 0.2s",
                       }}
                       onFocus={(e) => (e.target.style.borderColor = "rgba(167, 139, 250, 0.5)")}
                       onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
                     />
-                    <button
-                      onClick={() => toggleShowKey(provider.id)}
-                      style={{
-                        position: "absolute",
-                        right: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "transparent",
-                        border: "none",
-                        color: "#64748b",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {showKey[provider.id] ? (
-                          <>
-                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                            <line x1="1" y1="1" x2="23" y2="23"></line>
-                          </>
-                        ) : (
-                          <>
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                          </>
-                        )}
-                      </svg>
-                    </button>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <a href={provider.link} target="_blank" rel="noreferrer" style={{ fontSize: "0.75rem", color: "#a78bfa", textDecoration: "none" }}>

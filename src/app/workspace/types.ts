@@ -1,5 +1,7 @@
 export type AgentStatus = "idle" | "running" | "done" | "error";
 
+export type AiProviderId = "google" | "openai" | "anthropic" | "deepseek" | "grok";
+
 export interface Agent {
   id: string;
   name: string;
@@ -7,7 +9,7 @@ export interface Agent {
   icon: string;
   color: string;
   description: string;
-  provider: "google" | "openai" | "anthropic";
+  provider: AiProviderId;
   model: string;
   mcpServers?: string[];
 }
