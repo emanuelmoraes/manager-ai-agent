@@ -130,6 +130,40 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed }: TopBarProps) {
       {/* Right: Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Link
+          href="/workspace/workflows"
+          title="Workflows Nativos"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 14px",
+            background: "rgba(124, 58, 237, 0.15)",
+            border: "1px solid rgba(167, 139, 250, 0.3)",
+            borderRadius: 10,
+            color: "#c4b5fd",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            textDecoration: "none",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.6)";
+            e.currentTarget.style.background = "rgba(124, 58, 237, 0.25)";
+            e.currentTarget.style.color = "#ffffff";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.3)";
+            e.currentTarget.style.background = "rgba(124, 58, 237, 0.15)";
+            e.currentTarget.style.color = "#c4b5fd";
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Workflows</span>
+        </Link>
+
+        <Link
           href="/settings"
           title="Configurações"
           style={{

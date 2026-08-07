@@ -96,3 +96,30 @@ export async function getPipelineFromFirebase() {
   }
   return [];
 }
+
+// Workflows
+export async function syncWorkflowToFirebase(workflow: any) {
+  try {
+    await setDoc(doc(db, "workflows", workflow.id), workflow, { merge: true });
+  } catch (e) {
+    console.error("Erro sync workflow:", e);
+  }
+}
+
+export async function deleteWorkflowFromFirebase(workflowId: string) {
+  try {
+    await deleteDoc(doc(db, "workflows", workflowId));
+  } catch (e) {
+    console.error("Erro delete workflow:", e);
+  }
+}
+
+export async function getWorkflowsFromFirebase() {
+  try {
+    const snapshot = await getDocs(collection(db, "workflows"));
+    return snapshot.docs.map(d => d.data());
+  } catch (e) {
+    console.error("Erro get workflows:", e);
+    return [];
+  }
+}
