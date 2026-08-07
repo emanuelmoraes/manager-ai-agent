@@ -369,16 +369,21 @@ export default function WorkspacePage() {
             <div
               style={{
                 display: "flex",
-                gap: 12,
+                gap: 8,
                 padding: isMobile ? "12px 12px 0" : "24px 24px 0",
                 overflowX: "auto",
                 WebkitOverflowScrolling: "touch",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
               }}
             >
-              {openSessionIds.map(sessionId => {
-                const session = chatSessions.find(s => s.id === sessionId);
+              {openSessionIds.map((sessionId) => {
+                const session = chatSessions.find((s) => s.id === sessionId);
                 if (!session) return null;
+                const ag = getAgent(session.agentId);
                 const isActive = activeSessionId === sessionId;
+                const agentColor = ag?.color || "#8b5cf6";
+
                 return (
                   <div
                     key={sessionId}
@@ -390,30 +395,89 @@ export default function WorkspacePage() {
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
-                      padding: "8px 16px",
-                      background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
-                      border: "1px solid rgba(255,255,255,0.05)",
-                      borderRadius: "16px 16px 0 0",
-                      borderBottom: "none",
+                      padding: "8px 14px",
+                      background: isActive
+                        ? "rgba(255, 255, 255, 0.08)"
+                        : "rgba(255, 255, 255, 0.02)",
+                      border: isActive
+                        ? `1px solid rgba(255, 255, 255, 0.15)`
+                        : "1px solid rgba(255, 255, 255, 0.05)",
+                      borderBottom: isActive ? `2px solid ${agentColor}` : "1px solid rgba(255, 255, 255, 0.05)",
+                      borderRadius: "12px 12px 0 0",
                       cursor: "pointer",
                       color: isActive ? "#f8fafc" : "#94a3b8",
-                      fontSize: "0.85rem",
+                      fontSize: "0.82rem",
                       fontWeight: isActive ? 600 : 400,
-                      transition: "all 0.2s",
+                      transition: "all 0.2s ease",
                       flexShrink: 0,
+                      backdropFilter: "blur(8px)",
+                      boxShadow: isActive ? `0 -4px 12px ${agentColor}15` : "none",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                        e.currentTarget.style.color = "#cbd5e1";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                        e.currentTarget.style.color = "#94a3b8";
+                      }
                     }}
                   >
-                    <span>{session.title}</span>
+                    {/* Agent Icon Badge */}
+                    <span
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 6,
+                        background: `${agentColor}30`,
+                        border: `1px solid ${agentColor}60`,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.75rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {ag?.icon || "🤖"}
+                    </span>
+
+                    {/* Agent Name + Session Title */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: "0.75rem", color: isActive ? "#c4b5fd" : "#64748b", fontWeight: 500 }}>
+                        {ag?.name || "Agente"}:
+                      </span>
+                      <span>{session.title}</span>
+                    </div>
+
+                    {/* Close Tab Button */}
                     <button
                       onClick={(e) => closeSessionTab(sessionId, e)}
+                      title="Fechar aba"
                       style={{
                         background: "transparent",
                         border: "none",
-                        color: "#94a3b8",
+                        color: isActive ? "#cbd5e1" : "#64748b",
                         cursor: "pointer",
-                        fontSize: "1.1rem",
-                        marginLeft: 4,
+                        fontSize: "1rem",
+                        lineHeight: 1,
+                        marginLeft: 2,
+                        padding: "2px 4px",
+                        borderRadius: 4,
                         display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                        e.currentTarget.style.color = "#ef4444";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = isActive ? "#cbd5e1" : "#64748b";
                       }}
                     >
                       &times;

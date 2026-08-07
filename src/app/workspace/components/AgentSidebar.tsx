@@ -119,7 +119,7 @@ export function AgentSidebar({
           style={{
             position: "relative",
             width: "85vw",
-            maxWidth: 320,
+            maxWidth: 340,
             height: "100%",
             background: "rgba(17, 12, 32, 0.98)",
             borderRight: "1px solid rgba(255, 255, 255, 0.1)",
@@ -182,129 +182,220 @@ export function AgentSidebar({
             ) : (
               agents.map((agent) => {
                 const isSelected = selectedAgent === agent.id;
-                return (
-                  <div
-                    key={agent.id}
-                    style={{
-                      background: isSelected ? "rgba(255, 255, 255, 0.08)" : "transparent",
-                      border: isSelected ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid transparent",
-                      borderRadius: 14,
-                      padding: "14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 12,
-                    }}
-                  >
+                const agentSessions = chatSessions.filter((s) => s.agentId === agent.id);
+
+                if (isSelected) {
+                  return (
                     <div
-                      onClick={() => setSelectedAgent(agent.id)}
+                      key={agent.id}
                       style={{
+                        background: "rgba(255, 255, 255, 0.05)",
+                        border: `1px solid ${agent.color}40`,
+                        borderRadius: 16,
+                        padding: "14px",
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        cursor: "pointer",
+                        flexDirection: "column",
+                        gap: 12,
+                        boxShadow: `0 4px 20px ${agent.color}15`,
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div
-                          style={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 10,
-                            background: `linear-gradient(135deg, ${agent.color}40, ${agent.color}10)`,
-                            border: `1px solid ${agent.color}50`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 22,
-                          }}
-                        >
-                          {agent.icon}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#f8fafc" }}>
-                            {agent.name}
-                          </div>
-                          <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{agent.role}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {isSelected && (
-                      <>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={() => handleCreateSession(agent.id)}
-                            style={{
-                              flex: 1,
-                              padding: "10px",
-                              background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
-                              border: "none",
-                              borderRadius: 10,
-                              color: "white",
-                              fontSize: "0.85rem",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                            }}
-                          >
-                            + New Session
-                          </button>
-                          <button
-                            onClick={() => openEditModal(agent)}
+                      {/* Active Agent Header */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                          <div
                             style={{
                               width: 40,
                               height: 40,
+                              borderRadius: 10,
+                              background: `linear-gradient(135deg, ${agent.color}40, ${agent.color}10)`,
+                              border: `1px solid ${agent.color}50`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 20,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {agent.icon}
+                          </div>
+                          <div style={{ overflow: "hidden" }}>
+                            <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#f8fafc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {agent.name}
+                            </div>
+                            <div style={{ fontSize: "0.72rem", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {agent.role}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                          <button
+                            onClick={() => {
+                              openEditModal(agent);
+                              if (setIsDrawerOpen) setIsDrawerOpen(false);
+                            }}
+                            title="Editar Agente"
+                            style={{
+                              width: 32,
+                              height: 32,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               background: "rgba(255,255,255,0.05)",
                               border: "1px solid rgba(255,255,255,0.1)",
-                              borderRadius: 10,
+                              borderRadius: 8,
                               color: "#94a3b8",
+                              cursor: "pointer",
                             }}
                           >
                             ✏️
                           </button>
+                          <button
+                            onClick={() => handleDeleteAgent(agent.id)}
+                            title="Excluir Agente"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "rgba(239, 68, 68, 0.1)",
+                              border: "1px solid rgba(239, 68, 68, 0.2)",
+                              borderRadius: 8,
+                              color: "#ef4444",
+                              cursor: "pointer",
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Sessions header & list */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                        <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#64748b", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                          Conversas ({agentSessions.length})
                         </div>
 
-                        {/* Chat Sessions */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {chatSessions
-                            .filter((s) => s.agentId === agent.id)
-                            .map((session) => (
-                              <div
-                                key={session.id}
-                                onClick={() => {
-                                  if (!openSessionIds.includes(session.id)) {
-                                    setOpenSessionIds([...openSessionIds, session.id]);
-                                  }
-                                  setActiveSessionId(session.id);
-                                }}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  padding: "8px 12px",
-                                  background:
-                                    activeSessionId === session.id
-                                      ? "rgba(139, 92, 246, 0.18)"
-                                      : "transparent",
-                                  borderRadius: 8,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    fontSize: "0.8rem",
-                                    color: activeSessionId === session.id ? "#f8fafc" : "#94a3b8",
+                        {agentSessions.map((session) => {
+                          const isActiveSess = activeSessionId === session.id;
+                          return (
+                            <div
+                              key={session.id}
+                              onClick={() => {
+                                if (!openSessionIds.includes(session.id)) {
+                                  setOpenSessionIds([...openSessionIds, session.id]);
+                                }
+                                setActiveSessionId(session.id);
+                                if (setIsDrawerOpen) setIsDrawerOpen(false);
+                              }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "8px 10px",
+                                background: isActiveSess ? "rgba(139, 92, 246, 0.18)" : "rgba(255, 255, 255, 0.02)",
+                                borderRadius: 8,
+                                borderLeft: `3px solid ${isActiveSess ? "#8b5cf6" : "transparent"}`,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <span style={{ fontSize: "0.8rem", color: isActiveSess ? "#f8fafc" : "#cbd5e1", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                💬 {session.title}
+                              </span>
+                              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newTitle = prompt("Renomear sessão:", session.title);
+                                    if (newTitle) handleRenameSession(session.id, newTitle);
                                   }}
+                                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.75rem", opacity: 0.7 }}
+                                  title="Renomear"
                                 >
-                                  💬 {session.title}
-                                </span>
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSession(session.id);
+                                  }}
+                                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.75rem", opacity: 0.7 }}
+                                  title="Excluir"
+                                >
+                                  🗑️
+                                </button>
                               </div>
-                            ))}
-                        </div>
-                      </>
-                    )}
+                            </div>
+                          );
+                        })}
+
+                        {/* + Nova Conversa Button */}
+                        <button
+                          onClick={() => handleCreateSession(agent.id)}
+                          style={{
+                            width: "100%",
+                            padding: "9px",
+                            background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
+                            border: "none",
+                            borderRadius: 9,
+                            color: "white",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 6,
+                            marginTop: 6,
+                            boxShadow: "0 4px 12px rgba(139, 92, 246, 0.3)",
+                          }}
+                        >
+                          + Nova Conversa
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Inactive agent item in Drawer
+                return (
+                  <div
+                    key={agent.id}
+                    onClick={() => setSelectedAgent(agent.id)}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.02)",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                      borderRadius: 12,
+                      padding: "10px 12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 8,
+                          background: `${agent.color}20`,
+                          border: `1px solid ${agent.color}40`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 18,
+                        }}
+                      >
+                        {agent.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1" }}>{agent.name}</div>
+                        <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{agentSessions.length} conversas</div>
+                      </div>
+                    </div>
                   </div>
                 );
               })
@@ -334,7 +425,7 @@ export function AgentSidebar({
                 cursor: "pointer",
               }}
             >
-              + New Agent
+              + Novo Agente
             </button>
           </div>
         </aside>
@@ -342,7 +433,7 @@ export function AgentSidebar({
     );
   }
 
-  // 2. COLLAPSED MINI-SIDEBAR DESKTOP MODE (72px)
+  // 2. COLLAPSED MINI-SIDEBAR DESKTOP MODE (76px)
   if (isCollapsed) {
     return (
       <aside
@@ -492,7 +583,7 @@ export function AgentSidebar({
         }}
       >
         {/* Sidebar header */}
-        <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span
             style={{
               fontSize: "0.75rem",
@@ -502,42 +593,79 @@ export function AgentSidebar({
               textTransform: "uppercase",
             }}
           >
-            Agents
+            Agentes
           </span>
-          <button
-            onClick={() => setIsCollapsed && setIsCollapsed(true)}
-            title="Recolher menu lateral"
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#64748b",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 4,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#a78bfa")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="11 17 6 12 11 7"></polyline>
-              <polyline points="18 17 13 12 18 7"></polyline>
-            </svg>
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              onClick={openCreateModal}
+              title="Criar Novo Agente"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 8,
+                color: "#e2e8f0",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "4px 8px",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.4)";
+                e.currentTarget.style.color = "#a78bfa";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                e.currentTarget.style.color = "#e2e8f0";
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Novo
+            </button>
+            <button
+              onClick={() => setIsCollapsed && setIsCollapsed(true)}
+              title="Recolher menu lateral"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#64748b",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 4,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#a78bfa")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Agent list */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 16px" }}>
           {agents.length === 0 ? (
             <div style={{ textAlign: "center", opacity: 0.5, marginTop: 40 }}>
               <span style={{ fontSize: "2rem" }}>🤖</span>
-              <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: 10 }}>Nenhum agente.</p>
+              <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: 10 }}>Nenhum agente cadastrado.</p>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {agents.map((agent) => {
                 const isSelected = selectedAgent === agent.id;
+                const agentSessions = chatSessions.filter((s) => s.agentId === agent.id);
 
                 if (isSelected) {
                   // Active Agent Card
@@ -545,235 +673,257 @@ export function AgentSidebar({
                     <div
                       key={agent.id}
                       style={{
-                        background: "rgba(255, 255, 255, 0.05)",
-                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: `1px solid ${agent.color}50`,
                         borderRadius: 16,
                         padding: "16px",
                         display: "flex",
                         flexDirection: "column",
-                        gap: 16,
+                        gap: 14,
+                        boxShadow: `0 4px 20px ${agent.color}15`,
+                        transition: "all 0.2s ease",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div
-                          style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 12,
-                            background: `linear-gradient(135deg, ${agent.color}40, ${agent.color}10)`,
-                            border: `1px solid ${agent.color}50`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 24,
-                            boxShadow: `0 0 20px ${agent.color}20`,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {agent.icon}
+                      {/* Active Agent Header Info */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, overflow: "hidden" }}>
+                          <div
+                            style={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: 12,
+                              background: `linear-gradient(135deg, ${agent.color}40, ${agent.color}10)`,
+                              border: `1px solid ${agent.color}50`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 22,
+                              boxShadow: `0 0 15px ${agent.color}25`,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {agent.icon}
+                          </div>
+                          <div style={{ overflow: "hidden" }}>
+                            <div
+                              style={{
+                                fontSize: "0.95rem",
+                                fontWeight: 700,
+                                color: "#f8fafc",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {agent.name}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "0.72rem",
+                                color: "#94a3b8",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {agent.role}
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ overflow: "hidden" }}>
-                          <div
+
+                        {/* Discrete Action Buttons */}
+                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                          <button
+                            onClick={() => openEditModal(agent)}
+                            title="Configurar Agente"
                             style={{
-                              fontSize: "1rem",
-                              fontWeight: 700,
-                              color: "#f8fafc",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {agent.name}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
+                              width: 32,
+                              height: 32,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: 8,
                               color: "#94a3b8",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                              e.currentTarget.style.color = "#f8fafc";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                              e.currentTarget.style.color = "#94a3b8";
                             }}
                           >
-                            {agent.role}
-                          </div>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAgent(agent.id)}
+                            title="Excluir Agente"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "rgba(239, 68, 68, 0.1)",
+                              border: "1px solid rgba(239, 68, 68, 0.2)",
+                              borderRadius: 8,
+                              color: "#ef4444",
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(239, 68, 68, 0.25)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
                         </div>
                       </div>
 
-                      <div style={{ display: "flex", gap: 8 }}>
+                      {/* Sessions Sub-list Section */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
+                          <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#64748b", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                            Conversas
+                          </span>
+                          <span style={{ fontSize: "0.7rem", color: "#64748b" }}>{agentSessions.length}</span>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {agentSessions.map((session) => {
+                            const isActiveSess = activeSessionId === session.id;
+                            return (
+                              <div
+                                key={session.id}
+                                onClick={() => {
+                                  if (!openSessionIds.includes(session.id)) {
+                                    setOpenSessionIds([...openSessionIds, session.id]);
+                                  }
+                                  setActiveSessionId(session.id);
+                                }}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  padding: "8px 10px",
+                                  background: isActiveSess
+                                    ? "rgba(139, 92, 246, 0.18)"
+                                    : "rgba(255, 255, 255, 0.02)",
+                                  borderRadius: 8,
+                                  borderLeft: `3px solid ${isActiveSess ? "#8b5cf6" : "transparent"}`,
+                                  cursor: "pointer",
+                                  transition: "all 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isActiveSess) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isActiveSess) e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: "0.78rem",
+                                    color: isActiveSess ? "#f8fafc" : "#94a3b8",
+                                    overflow: "hidden",
+                                    whiteSpace: "nowrap",
+                                    textOverflow: "ellipsis",
+                                    fontWeight: isActiveSess ? 600 : 400,
+                                  }}
+                                >
+                                  💬 {session.title}
+                                </span>
+                                <div style={{ display: "flex", gap: 4, flexShrink: 0, opacity: 0.8 }}>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newTitle = prompt("Renomear sessão:", session.title);
+                                      if (newTitle) handleRenameSession(session.id, newTitle);
+                                    }}
+                                    style={{
+                                      background: "transparent",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      fontSize: "0.75rem",
+                                      padding: "2px 4px",
+                                      borderRadius: 4,
+                                    }}
+                                    title="Renomear"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteSession(session.id);
+                                    }}
+                                    style={{
+                                      background: "transparent",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      fontSize: "0.75rem",
+                                      padding: "2px 4px",
+                                      borderRadius: 4,
+                                    }}
+                                    title="Excluir"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* + Nova Conversa Button */}
                         <button
                           onClick={() => handleCreateSession(agent.id)}
                           style={{
-                            flex: 1,
-                            padding: "10px",
+                            width: "100%",
+                            padding: "9px",
                             background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
                             border: "none",
                             borderRadius: 10,
                             color: "white",
-                            fontSize: "0.85rem",
+                            fontSize: "0.82rem",
                             fontWeight: 600,
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             gap: 6,
+                            marginTop: 4,
+                            boxShadow: "0 4px 12px rgba(139, 92, 246, 0.25)",
                             transition: "all 0.2s",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+                          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.92")}
                           onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                         >
-                          + New Session
-                        </button>
-                        <button
-                          onClick={() => openEditModal(agent)}
-                          style={{
-                            width: 40,
-                            height: 40,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "rgba(255,255,255,0.05)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            borderRadius: 10,
-                            color: "#94a3b8",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                            e.currentTarget.style.color = "#f8fafc";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                            e.currentTarget.style.color = "#94a3b8";
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
                           </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteAgent(agent.id)}
-                          style={{
-                            width: 40,
-                            height: 40,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "rgba(239, 68, 68, 0.1)",
-                            border: "1px solid rgba(239, 68, 68, 0.2)",
-                            borderRadius: 10,
-                            color: "#ef4444",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
+                          Nova Conversa
                         </button>
                       </div>
-
-                      {/* Render Chat Sessions for this Agent */}
-                      {chatSessions
-                        .filter((s) => s.agentId === agent.id)
-                        .map((session) => (
-                          <div
-                            key={session.id}
-                            onClick={() => {
-                              if (!openSessionIds.includes(session.id)) {
-                                setOpenSessionIds([...openSessionIds, session.id]);
-                              }
-                              setActiveSessionId(session.id);
-                            }}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              padding: "8px 12px",
-                              background:
-                                activeSessionId === session.id
-                                  ? "rgba(139, 92, 246, 0.15)"
-                                  : "transparent",
-                              cursor: "pointer",
-                              transition: "all 0.2s",
-                              borderLeft: `2px solid ${
-                                activeSessionId === session.id ? "#8b5cf6" : "transparent"
-                              }`,
-                              marginTop: 4,
-                              borderRadius: "0 8px 8px 0",
-                            }}
-                            onMouseEnter={(e) => {
-                              if (activeSessionId !== session.id)
-                                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                            }}
-                            onMouseLeave={(e) => {
-                              if (activeSessionId !== session.id)
-                                e.currentTarget.style.background = "transparent";
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                color: activeSessionId === session.id ? "#e2e8f0" : "#94a3b8",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                                overflow: "hidden",
-                                whiteSpace: "nowrap",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
-                              💬 {session.title}
-                            </span>
-                            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const newTitle = prompt("Renomear sessão:", session.title);
-                                  if (newTitle) handleRenameSession(session.id, newTitle);
-                                }}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  cursor: "pointer",
-                                  fontSize: "0.8rem",
-                                  opacity: 0.6,
-                                }}
-                                title="Renomear"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteSession(session.id);
-                                }}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  cursor: "pointer",
-                                  fontSize: "0.8rem",
-                                  opacity: 0.6,
-                                }}
-                                title="Excluir"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        ))}
                     </div>
                   );
                 }
 
-                // Inactive Agent Row
+                // Inactive Agent Item
                 return (
                   <div
                     key={agent.id}
@@ -782,78 +932,76 @@ export function AgentSidebar({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "12px 16px",
-                      borderRadius: 16,
-                      background: "transparent",
+                      padding: "10px 14px",
+                      borderRadius: 14,
+                      background: "rgba(255, 255, 255, 0.02)",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
                       cursor: "pointer",
                       transition: "all 0.2s",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)";
+                    }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
                       <div
                         style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 8,
+                          width: 34,
+                          height: 34,
+                          borderRadius: 9,
                           background: `${agent.color}20`,
+                          border: `1px solid ${agent.color}40`,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 16,
+                          fontSize: 18,
                           flexShrink: 0,
                         }}
                       >
                         {agent.icon}
                       </div>
-                      <span
-                        style={{
-                          fontSize: "0.95rem",
-                          fontWeight: 600,
-                          color: "#cbd5e1",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {agent.name}
-                      </span>
+                      <div style={{ overflow: "hidden" }}>
+                        <div
+                          style={{
+                            fontSize: "0.88rem",
+                            fontWeight: 600,
+                            color: "#cbd5e1",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {agent.name}
+                        </div>
+                        <div style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                          {agentSessions.length} {agentSessions.length === 1 ? "conversa" : "conversas"}
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, opacity: 0.6, flexShrink: 0 }}>
+
+                    <div style={{ display: "flex", gap: 4, flexShrink: 0, opacity: 0.5 }}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditModal(agent);
                         }}
+                        title="Configurar Agente"
                         style={{
                           background: "transparent",
                           border: "none",
                           color: "#94a3b8",
                           cursor: "pointer",
                           display: "flex",
+                          padding: 4,
                         }}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteAgent(agent.id);
-                        }}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: "#94a3b8",
-                          cursor: "pointer",
-                          display: "flex",
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6"></polyline>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                       </button>
                     </div>
@@ -865,7 +1013,7 @@ export function AgentSidebar({
         </div>
 
         {/* Sidebar footer */}
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: "16px 20px" }}>
           <button
             onClick={openCreateModal}
             style={{
@@ -874,34 +1022,36 @@ export function AgentSidebar({
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
-              padding: "12px",
+              padding: "11px",
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px dashed rgba(255,255,255,0.15)",
               background: "transparent",
               color: "#e2e8f0",
-              fontSize: "0.85rem",
+              fontSize: "0.83rem",
               fontWeight: 600,
               cursor: "pointer",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+              e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.4)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              e.currentTarget.style.color = "#a78bfa";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
               e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "#e2e8f0";
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
-            New Agent
+            Novo Agente
           </button>
         </div>
       </div>
 
-      {/* Resizer Handle (Alça interativa para arrastar a borda à direita) */}
+      {/* Resizer Handle */}
       <div
         onMouseDown={handleMouseDownResize}
         title="Arrastar para redimensionar"
