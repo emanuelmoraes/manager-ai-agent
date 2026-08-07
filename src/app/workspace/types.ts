@@ -12,6 +12,8 @@ export interface Agent {
   provider: AiProviderId;
   model: string;
   mcpServers?: string[];
+  temperature?: number;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface ChatSession {

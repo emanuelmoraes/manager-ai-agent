@@ -16,9 +16,10 @@ import { Agent, ChatSession, ChatMessage, AiProviderId } from "./types";
 import { TopBar } from "./components/TopBar";
 import { AgentSidebar } from "./components/AgentSidebar";
 import { ChatArea } from "./components/ChatArea";
-import { AgentModal } from "./components/AgentModal";
+import { useRouter } from "next/navigation";
 
 export default function WorkspacePage() {
+  const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
@@ -27,20 +28,6 @@ export default function WorkspacePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
-
-  // Modal States
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
-  const [newAgentName, setNewAgentName] = useState("");
-  const [newAgentRole, setNewAgentRole] = useState("");
-  const [newAgentIcon, setNewAgentIcon] = useState("🤖");
-  const [newAgentColor, setNewAgentColor] = useState("#a78bfa");
-  const [newAgentDescription, setNewAgentDescription] = useState("");
-  const [newAgentProvider, setNewAgentProvider] = useState<AiProviderId>("google");
-  const [newAgentModel, setNewAgentModel] = useState("googleai/gemini-2.5-pro");
-  const [newAgentMcpServers, setNewAgentMcpServers] = useState<string[]>([]);
-  const [availableMcpServers, setAvailableMcpServers] = useState<{ id: string; name?: string }[]>([]);
-  const [formError, setFormError] = useState("");
 
   // Chat States
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -127,15 +114,6 @@ export default function WorkspacePage() {
     } catch (e) {
       console.error("Error loading UI state", e);
     }
-
-    fetch("/api/settings/mcp")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setAvailableMcpServers(data.data);
-        }
-      })
-      .catch((err) => console.error("Error loading MCP servers", err));
   }, []);
 
   useEffect(() => {
@@ -159,53 +137,6 @@ export default function WorkspacePage() {
   }, [selectedAgent, openSessionIds, activeSessionId]);
 
   // Agent Handlers
-  const handleCreateAgent = () => {
-    if (!newAgentName.trim()) return setFormError("O nome do agente é obrigatório.");
-    if (!newAgentRole.trim()) return setFormError("A função do agente é obrigatória.");
-
-    const newAgent: Agent = {
-      id: "agent_" + Math.random().toString(36).slice(2, 11),
-      name: newAgentName.trim(),
-      role: newAgentRole.trim(),
-      icon: newAgentIcon,
-      color: newAgentColor,
-      description: newAgentDescription.trim() || "Sem descrição fornecida.",
-      provider: newAgentProvider,
-      model: newAgentModel,
-      mcpServers: newAgentMcpServers,
-    };
-
-    const updatedAgents = [...agents, newAgent];
-    setAgents(updatedAgents);
-    localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
-    syncAgentsToFirebase(updatedAgents);
-    closeModal();
-  };
-
-  const handleEditAgent = () => {
-    if (!newAgentName.trim()) return setFormError("O nome do agente é obrigatório.");
-    if (!newAgentRole.trim()) return setFormError("A função do agente é obrigatória.");
-    if (!editingAgent) return;
-
-    const updatedAgent: Agent = {
-      ...editingAgent,
-      name: newAgentName.trim(),
-      role: newAgentRole.trim(),
-      icon: newAgentIcon,
-      color: newAgentColor,
-      description: newAgentDescription.trim() || "Sem descrição fornecida.",
-      provider: newAgentProvider,
-      model: newAgentModel,
-      mcpServers: newAgentMcpServers,
-    };
-
-    const updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a));
-    setAgents(updatedAgents);
-    localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
-    syncAgentsToFirebase(updatedAgents);
-    closeModal();
-  };
-
   const handleDeleteAgent = (id: string) => {
     if (window.confirm("Deseja realmente excluir este agente?")) {
       const updatedAgents = agents.filter((a) => a.id !== id);
@@ -239,34 +170,12 @@ export default function WorkspacePage() {
   };
 
   const openEditModal = (agent: Agent) => {
-    setEditingAgent(agent);
-    setNewAgentName(agent.name);
-    setNewAgentRole(agent.role);
-    setNewAgentIcon(agent.icon);
-    setNewAgentColor(agent.color);
-    setNewAgentDescription(agent.description);
-    setNewAgentProvider(agent.provider);
-    setNewAgentModel(agent.model);
-    setNewAgentMcpServers(agent.mcpServers || []);
-    setFormError("");
-    setIsModalOpen(true);
+    router.push(`/workspace/agent/${agent.id}`);
   };
 
   const openCreateModal = () => {
-    setEditingAgent(null);
-    setNewAgentName("");
-    setNewAgentRole("");
-    setNewAgentIcon("🤖");
-    setNewAgentColor("#a78bfa");
-    setNewAgentDescription("");
-    setNewAgentProvider("google");
-    setNewAgentModel("googleai/gemini-2.5-pro");
-    setNewAgentMcpServers([]);
-    setFormError("");
-    setIsModalOpen(true);
+    router.push("/workspace/agent/new");
   };
-
-  const closeModal = () => setIsModalOpen(false);
 
   // Chat Handlers
   const handleCreateSession = (agentId: string) => {
@@ -373,6 +282,8 @@ export default function WorkspacePage() {
           systemPrompt: `Role: ${agent.role}\nDescription: ${agent.description}`,
           provider: agent.provider,
           model: agent.model,
+          temperature: agent.temperature,
+          reasoningEffort: agent.reasoningEffort,
           mcpServers: agent.mcpServers || []
         })
       });
@@ -532,32 +443,6 @@ export default function WorkspacePage() {
           />
         </div>
       </div>
-
-      <AgentModal
-        isModalOpen={isModalOpen}
-        closeModal={closeModal}
-        editingAgent={editingAgent}
-        newAgentName={newAgentName}
-        setNewAgentName={setNewAgentName}
-        newAgentRole={newAgentRole}
-        setNewAgentRole={setNewAgentRole}
-        newAgentIcon={newAgentIcon}
-        setNewAgentIcon={setNewAgentIcon}
-        newAgentColor={newAgentColor}
-        setNewAgentColor={setNewAgentColor}
-        newAgentDescription={newAgentDescription}
-        setNewAgentDescription={setNewAgentDescription}
-        newAgentProvider={newAgentProvider}
-        setNewAgentProvider={setNewAgentProvider}
-        newAgentModel={newAgentModel}
-        setNewAgentModel={setNewAgentModel}
-        newAgentMcpServers={newAgentMcpServers}
-        setNewAgentMcpServers={setNewAgentMcpServers}
-        availableMcpServers={availableMcpServers}
-        formError={formError}
-        handleCreateAgent={handleCreateAgent}
-        handleEditAgent={handleEditAgent}
-      />
     </div>
   );
 }

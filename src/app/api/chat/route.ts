@@ -36,7 +36,7 @@ const consultarBaseConhecimentoTool = ai.defineTool(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, systemPrompt, provider, model, mcpServers } = body;
+    const { message, systemPrompt, provider, model, mcpServers, temperature, reasoningEffort } = body;
 
     if (!message || !provider || !model) {
       return NextResponse.json({ error: 'Campos message, provider e model são obrigatórios.' }, { status: 400 });
@@ -67,7 +67,8 @@ export async function POST(req: NextRequest) {
         prompt: message,
         tools: [...agentMcpTools, consultarBaseConhecimentoTool],
         config: {
-          apiKey: apiKey
+          apiKey: apiKey,
+          temperature: temperature ?? 0.7
         }
       });
 
@@ -81,6 +82,9 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: model,
+          ...(model.includes('o1') || model.includes('o3') 
+            ? { reasoning_effort: reasoningEffort || 'medium' }
+            : { temperature: temperature ?? 0.7 }),
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: message }
@@ -106,6 +110,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           model: model,
           max_tokens: 4096,
+          temperature: temperature ?? 0.7,
           system: systemPrompt,
           messages: [
             { role: 'user', content: message }
@@ -129,6 +134,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: model,
+          temperature: temperature ?? 0.7,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: message }
@@ -152,6 +158,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: model,
+          temperature: temperature ?? 0.7,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: message }

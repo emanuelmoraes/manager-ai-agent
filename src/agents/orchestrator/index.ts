@@ -15,6 +15,8 @@ const WorkflowInputSchema = z.object({
       provider: z.string(),
       model: z.string(),
       description: z.string(),
+      temperature: z.number().optional(),
+      reasoningEffort: z.string().optional(),
     })
   ).default([]),
 });
@@ -133,7 +135,8 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
             prompt: promptText,
             tools: [...agentMcpTools, consultarBaseConhecimentoTool],
             config: {
-              apiKey: apiKey
+              apiKey: apiKey,
+              temperature: agent.temperature ?? 0.7,
             }
           });
           agentOutput = response.text;
@@ -147,6 +150,10 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
               },
               body: JSON.stringify({
                 model: agent.model || 'gpt-4o',
+                ...(agent.model?.includes('o1') || agent.model?.includes('o3') 
+                  ? { reasoning_effort: agent.reasoningEffort || 'medium' } 
+                  : { temperature: agent.temperature ?? 0.7 }
+                ),
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: promptText }
@@ -176,6 +183,7 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
               body: JSON.stringify({
                 model: agent.model || 'claude-3-5-sonnet-20241022',
                 max_tokens: 4096,
+                temperature: agent.temperature ?? 0.7,
                 system: systemPrompt,
                 messages: [
                   { role: 'user', content: promptText }
