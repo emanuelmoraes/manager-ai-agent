@@ -48,68 +48,58 @@ export function MCPTab({
   handleCancelEdit,
 }: MCPTabProps) {
   return (
-    <div style={{ display: "flex", gap: 40, width: "100%", padding: "40px 0", maxWidth: 1200, margin: "0 auto" }}>
+    <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 w-full py-6 md:py-10 px-4 md:px-0 max-w-6xl mx-auto">
       {/* LEFT COLUMN: Registered Servers */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 32 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+      <div className="flex-1 flex flex-col gap-8 w-full">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-50 m-0">
             Servidores MCP
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: 0, lineHeight: 1.5 }}>
+          <p className="text-slate-400 text-sm m-0 leading-relaxed">
             Gerencie conexões com servidores Model Context Protocol (MCP). Adicione fontes de dados e ferramentas externas para seus agentes de IA.
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#f8fafc", margin: "16px 0 0 0" }}>
+        <div className="flex flex-col gap-4 mt-2">
+          <h3 className="text-lg font-bold text-slate-50 m-0">
             Servidores MCP Cadastrados ({mcpServers.length})
           </h3>
           
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="flex flex-col gap-4">
             {loadingMcp ? (
-              <p style={{ color: "#94a3b8" }}>Carregando servidores MCP...</p>
+              <p className="text-slate-400">Carregando servidores MCP...</p>
             ) : mcpServers.length === 0 ? (
-              <div style={{ padding: 32, textAlign: "center", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 16 }}>
-                <p style={{ color: "#94a3b8" }}>Nenhum servidor MCP configurado.</p>
+              <div className="p-8 text-center border border-dashed border-white/10 rounded-2xl">
+                <p className="text-slate-400">Nenhum servidor MCP configurado.</p>
               </div>
             ) : (
               mcpServers.map((srv) => (
                 <div
                   key={srv.id}
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 16,
-                    padding: 24,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 20,
-                  }}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 flex flex-col gap-5"
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <h4 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h4 className="text-lg font-bold text-slate-50 m-0">
                           {srv.name || srv.id}
                         </h4>
-                        <span style={{ padding: "4px 8px", background: "rgba(255,255,255,0.1)", borderRadius: 6, fontSize: "0.7rem", fontWeight: 700, color: "#cbd5e1" }}>
+                        <span className="px-2 py-1 bg-white/10 rounded-md text-[10px] font-bold text-slate-300">
                           {srv.type.toUpperCase()}
                         </span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#94a3b8", fontSize: "0.85rem", fontFamily: "monospace" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="flex items-start md:items-center gap-2 text-slate-400 text-xs font-mono break-all md:break-normal">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 md:mt-0">
                           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                         </svg>
                         {srv.type === "sse" ? srv.url : `${srv.command} ${srv.args?.join(" ")}`}
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div className="flex gap-2 self-end sm:self-auto shrink-0 mt-[-20px] sm:mt-0">
                       <button
                         onClick={() => handleEditMcpServer(srv)}
-                        style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", transition: "color 0.2s" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#f8fafc")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+                        className="bg-transparent border-none text-slate-400 cursor-pointer p-1.5 hover:text-slate-50 transition-colors"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -117,9 +107,7 @@ export function MCPTab({
                       </button>
                       <button
                         onClick={() => handleDeleteMcpServer(srv.id)}
-                        style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", transition: "color 0.2s" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+                        className="bg-transparent border-none text-slate-400 cursor-pointer p-1.5 hover:text-red-500 transition-colors"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="3 6 5 6 21 6"></polyline>
@@ -129,39 +117,24 @@ export function MCPTab({
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 16 }}>
-                    <div style={{ display: "flex", gap: 48 }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", letterSpacing: "0.05em" }}>SERVER ID</span>
-                        <span style={{ fontSize: "0.85rem", color: "#e2e8f0", fontFamily: "monospace" }}>{srv.id}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-white/5 pt-4 gap-4">
+                    <div className="flex gap-6 sm:gap-12">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-slate-500 tracking-wider">SERVER ID</span>
+                        <span className="text-xs text-slate-200 font-mono">{srv.id}</span>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", letterSpacing: "0.05em" }}>STATUS</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
-                          <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#22c55e" }}>Ativo</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-slate-500 tracking-wider">STATUS</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          <span className="text-xs font-semibold text-green-500">Ativo</span>
                         </div>
                       </div>
                     </div>
                     <button
                       onClick={() => handleTestMcpServer(srv.id)}
                       disabled={testingMcp === srv.id}
-                      style={{
-                        padding: "8px 16px",
-                        background: "transparent",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                        color: "#f8fafc",
-                        fontSize: "0.85rem",
-                        fontWeight: 600,
-                        cursor: testingMcp === srv.id ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        transition: "all 0.2s"
-                      }}
-                      onMouseEnter={(e) => { if (testingMcp !== srv.id) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
-                      onMouseLeave={(e) => { if (testingMcp !== srv.id) e.currentTarget.style.background = "transparent"; }}
+                      className="px-4 py-2 bg-transparent border border-white/10 rounded-lg text-slate-50 text-xs font-semibold cursor-pointer flex items-center justify-center gap-2 transition-colors hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                     >
                       {testingMcp === srv.id ? "Testando..." : "Testar Conexão"}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -178,31 +151,23 @@ export function MCPTab({
       </div>
 
       {/* RIGHT COLUMN: Cadastrar Servidor */}
-      <div style={{ width: 440, flexShrink: 0 }}>
+      <div className="w-full lg:w-[440px] shrink-0">
         <div
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 24,
-            padding: 32,
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-          }}
+          className="bg-white/5 border border-white/10 rounded-[24px] p-6 md:p-8 flex flex-col gap-6"
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
               {editingId ? "Editar Servidor MCP" : "Cadastrar Servidor MCP"}
             </h2>
-            <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: 0, lineHeight: 1.5 }}>
+            <p className="text-slate-400 text-xs md:text-sm m-0 leading-relaxed">
               Adicione conexões com servidores MCP locais ou remotos. Os agentes autorizados poderão utilizar as ferramentas expostas por estes servidores de forma automática.
             </p>
           </div>
 
-          <form onSubmit={handleAddMcpServer} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <form onSubmit={handleAddMcpServer} className="flex flex-col gap-5">
             
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>ID DO SERVIDOR *</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-200">ID DO SERVIDOR *</label>
               <input
                 type="text"
                 placeholder="Ex: mcp-weather"
@@ -210,59 +175,33 @@ export function MCPTab({
                 onChange={(e) => setMcpForm({ ...mcpForm, id: e.target.value })}
                 disabled={!!editingId}
                 required
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                  color: "#f8fafc",
-                  fontSize: "0.9rem",
-                  outline: "none",
-                }}
+                className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 disabled:opacity-50 transition-colors"
               />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>NOME DE EXIBIÇÃO</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-200">NOME DE EXIBIÇÃO</label>
               <input
                 type="text"
                 placeholder="Ex: Servidor de Clima e Tempo"
                 value={mcpForm.name}
                 onChange={(e) => setMcpForm({ ...mcpForm, name: e.target.value })}
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                  color: "#f8fafc",
-                  fontSize: "0.9rem",
-                  outline: "none",
-                }}
+                className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 transition-colors"
               />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>TIPO DE TRANSPORTE *</label>
-              <div style={{ position: "relative" }}>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-200">TIPO DE TRANSPORTE *</label>
+              <div className="relative">
                 <select
                   value={mcpForm.type}
                   onChange={(e) => setMcpForm({ ...mcpForm, type: e.target.value as "sse" | "stdio" })}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 12,
-                    color: "#f8fafc",
-                    fontSize: "0.9rem",
-                    outline: "none",
-                    appearance: "none",
-                  }}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none appearance-none focus:border-violet-400 transition-colors"
                 >
-                  <option value="sse" style={{ background: "#110c1c" }}>SSE (Server-Sent Events) / HTTP</option>
-                  <option value="stdio" style={{ background: "#110c1c" }}>STDIO (Execução Local via CMD)</option>
+                  <option value="sse" className="bg-[#110c1c]">SSE (Server-Sent Events) / HTTP</option>
+                  <option value="stdio" className="bg-[#110c1c]">STDIO (Execução Local via CMD)</option>
                 </select>
-                <div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
@@ -271,103 +210,58 @@ export function MCPTab({
             </div>
 
             {mcpForm.type === "sse" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, animation: "fade-in 0.3s" }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>URL DO SERVIDOR SSE *</label>
+              <div className="flex flex-col gap-2 animate-fade-in">
+                <label className="text-xs font-bold text-slate-200">URL DO SERVIDOR SSE *</label>
                 <input
                   type="url"
                   placeholder="Ex: http://localhost:3001/sse"
                   value={mcpForm.url}
                   onChange={(e) => setMcpForm({ ...mcpForm, url: e.target.value })}
                   required={mcpForm.type === "sse"}
-                  style={{
-                    padding: "12px 16px",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 12,
-                    color: "#f8fafc",
-                    fontSize: "0.9rem",
-                    outline: "none",
-                  }}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 transition-colors"
                 />
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "fade-in 0.3s" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>COMANDO *</label>
+              <div className="flex flex-col gap-5 animate-fade-in">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-200">COMANDO *</label>
                   <input
                     type="text"
                     placeholder="Ex: node, npx, python3"
                     value={mcpForm.command}
                     onChange={(e) => setMcpForm({ ...mcpForm, command: e.target.value })}
                     required={mcpForm.type === "stdio"}
-                    style={{
-                      padding: "12px 16px",
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 12,
-                      color: "#f8fafc",
-                      fontSize: "0.9rem",
-                      outline: "none",
-                    }}
+                    className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 transition-colors"
                   />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>ARGUMENTOS (Separados por vírgula)</label>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-200">ARGUMENTOS (Separados por vírgula)</label>
                   <input
                     type="text"
                     placeholder="Ex: index.js, --port, 3000"
                     value={mcpForm.args}
                     onChange={(e) => setMcpForm({ ...mcpForm, args: e.target.value })}
-                    style={{
-                      padding: "12px 16px",
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 12,
-                      color: "#f8fafc",
-                      fontSize: "0.9rem",
-                      outline: "none",
-                    }}
+                    className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 transition-colors"
                   />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>VARIÁVEIS DE AMBIENTE (JSON Opcional)</label>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-200">VARIÁVEIS DE AMBIENTE (JSON Opcional)</label>
                   <textarea
                     placeholder='Ex: { "API_KEY": "12345" }'
                     value={mcpForm.env}
                     onChange={(e) => setMcpForm({ ...mcpForm, env: e.target.value })}
-                    style={{
-                      padding: "12px 16px",
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 12,
-                      color: "#f8fafc",
-                      fontSize: "0.9rem",
-                      outline: "none",
-                      minHeight: 80,
-                      fontFamily: "monospace",
-                      resize: "vertical"
-                    }}
+                    className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none min-h-[80px] font-mono resize-y focus:border-violet-400 transition-colors"
                   />
                 </div>
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+            <div className="flex flex-col sm:flex-row gap-3 mt-2">
               {editingId && (
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  style={{
-                    flex: 1,
-                    padding: "14px",
-                    background: "transparent",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 12,
-                    color: "#f8fafc",
-                    fontSize: "0.95rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
+                  className="flex-1 p-3.5 bg-transparent border border-white/10 rounded-xl text-slate-50 text-sm font-bold cursor-pointer hover:bg-white/5 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -375,26 +269,10 @@ export function MCPTab({
               <button
                 type="submit"
                 disabled={savingMcp}
-                style={{
-                  flex: 2,
-                  padding: "14px",
-                  background: savingMcp ? "rgba(124, 58, 237, 0.4)" : "linear-gradient(135deg, #a78bfa, #8b5cf6)",
-                  border: "none",
-                  borderRadius: 12,
-                  color: "white",
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  cursor: savingMcp ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  boxShadow: savingMcp ? "none" : "0 8px 25px rgba(124, 58, 237, 0.25)",
-                  transition: "all 0.2s",
-                }}
+                className={`flex-[2] p-3.5 border-none rounded-xl text-white text-sm font-bold cursor-pointer flex items-center justify-center gap-2 transition-all ${savingMcp ? 'bg-violet-600/40 shadow-none' : 'bg-gradient-to-br from-violet-400 to-violet-600 shadow-[0_8px_25px_rgba(124,58,237,0.25)] hover:scale-[1.02]'}`}
               >
                 {savingMcp ? (
-                  <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", animation: "spin 1s linear infinite" }} />
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>

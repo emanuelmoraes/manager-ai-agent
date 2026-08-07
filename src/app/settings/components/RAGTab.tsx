@@ -113,32 +113,24 @@ export function RAGTab({
   };
 
   return (
-    <div style={{ display: "flex", gap: 40, width: "100%", padding: "40px 0", maxWidth: 1200, margin: "0 auto" }}>
+    <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 w-full py-6 md:py-10 px-4 md:px-0 max-w-6xl mx-auto">
       {/* LEFT COLUMN: Indexed Docs & Settings */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 32 }}>
+      <div className="flex-1 flex flex-col gap-8 w-full">
 
         {/* Top-K Setting */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+              <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
                 Limite de Busca (Top-K)
               </h2>
-              <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "4px 0 0 0" }}>
+              <p className="text-slate-400 text-xs md:text-sm m-0 mt-1">
                 Define o número máximo de fragmentos de texto retornados ao agente para compor o contexto.
               </p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="flex items-center gap-3">
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 16px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 12,
-                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -157,31 +149,13 @@ export function RAGTab({
                   max="20"
                   value={ragLimit}
                   onChange={(e) => setRagLimit(Number(e.target.value))}
-                  style={{
-                    width: 40,
-                    background: "transparent",
-                    border: "none",
-                    color: "#f8fafc",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    outline: "none",
-                    textAlign: "center",
-                  }}
+                  className="w-10 bg-transparent border-none text-slate-50 text-base font-semibold outline-none text-center"
                 />
               </div>
               <button
                 onClick={handleSaveRagLimit}
                 disabled={savingRagLimit}
-                style={{
-                  padding: "10px 16px",
-                  background: "transparent",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                  color: "#f8fafc",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  cursor: savingRagLimit ? "not-allowed" : "pointer",
-                }}
+                className="px-4 py-2 bg-transparent border border-white/10 rounded-xl text-slate-50 text-sm font-semibold cursor-pointer hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Salvar
               </button>
@@ -190,8 +164,8 @@ export function RAGTab({
         </div>
 
         {/* Indexed Documents */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f8fafc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -199,62 +173,40 @@ export function RAGTab({
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+            <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
               Documentos Indexados
             </h2>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="flex flex-col gap-3">
             {loadingDocs ? (
-              <p style={{ color: "#94a3b8" }}>Carregando documentos...</p>
+              <p className="text-slate-400">Carregando documentos...</p>
             ) : docs.length === 0 ? (
-              <p style={{ color: "#94a3b8" }}>Nenhum documento indexado.</p>
+              <p className="text-slate-400">Nenhum documento indexado.</p>
             ) : (
               docs.map((doc) => (
                 <div
                   key={doc.id}
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 16,
-                    padding: 20,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                  }}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 flex flex-col gap-4"
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3 md:gap-4">
                       <div
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 10,
-                          background: "rgba(139, 92, 246, 0.15)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#a78bfa",
-                        }}
+                        className="w-10 h-10 md:w-11 md:h-11 rounded-lg bg-violet-500/15 flex items-center justify-center text-violet-400 shrink-0"
                       >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                           <polyline points="14 2 14 8 20 8"></polyline>
                         </svg>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <span style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc" }}>{doc.title}</span>
-                        <span style={{ fontSize: "0.75rem", color: "#64748b" }}>TEXTO EXTRAÍDO</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm md:text-base font-bold text-slate-50">{doc.title}</span>
+                        <span className="text-[10px] md:text-xs text-slate-500">TEXTO EXTRAÍDO</span>
                       </div>
                     </div>
                     <button
                       onClick={() => handleDeleteDoc(doc.id)}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: "#94a3b8",
-                        cursor: "pointer",
-                      }}
+                      className="bg-transparent border-none text-slate-400 cursor-pointer p-1 hover:text-red-400 transition-colors"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
@@ -263,26 +215,16 @@ export function RAGTab({
                     </button>
                   </div>
                   <p
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "#cbd5e1",
-                      margin: 0,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      lineHeight: 1.5,
-                    }}
+                    className="text-xs md:text-sm text-slate-300 m-0 line-clamp-2 leading-relaxed"
                   >
                     {doc.content.substring(0, 150)}...
                   </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
-                      <span style={{ fontSize: "0.75rem", color: "#22c55e" }}>Indexado</span>
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      <span className="text-[10px] md:text-xs text-green-500">Indexado</span>
                     </div>
-                    <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                    <span className="text-[10px] md:text-xs text-slate-500">
                       {new Date(doc.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
@@ -294,169 +236,95 @@ export function RAGTab({
       </div>
 
       {/* RIGHT COLUMN: Index New Content */}
-      <div style={{ width: 440, flexShrink: 0 }}>
+      <div className="w-full lg:w-[440px] shrink-0">
         <div
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 24,
-            padding: 32,
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-          }}
+          className="bg-white/5 border border-white/10 rounded-[24px] p-5 md:p-8 flex flex-col gap-6"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="flex items-center gap-3">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
             </svg>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+            <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
               Indexar Novo Conteúdo
             </h2>
           </div>
 
-          <form onSubmit={handleAddDoc} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <form onSubmit={handleAddDoc} className="flex flex-col gap-5">
             {/* Upload Area */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: `1.5px dashed ${isDragging ? "#a78bfa" : "rgba(255,255,255,0.15)"}`,
-                borderRadius: 16,
-                padding: "32px 20px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 16,
-                cursor: "pointer",
-                background: isDragging ? "rgba(167, 139, 250, 0.05)" : "transparent",
-                transition: "all 0.2s",
-              }}
+              className={`border-[1.5px] border-dashed rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all ${isDragging ? 'border-violet-400 bg-violet-400/5' : 'border-white/15 bg-transparent hover:bg-white/5'}`}
             >
               <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.05)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#94a3b8",
-                }}
+                className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-slate-400"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"></path>
                   <path d="M16 16l-4-4-4 4"></path>
                 </svg>
               </div>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#e2e8f0", display: "block" }}>
+              <div className="text-center">
+                <span className="text-sm font-semibold text-slate-200 block">
                   {extracting ? "Extraindo texto..." : "Arraste e solte arquivos aqui"}
                 </span>
-                <span style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 4, display: "block" }}>
+                <span className="text-xs text-slate-500 mt-1 block">
                   PDF, DOCX, TXT, MD (Máx 50MB)
                 </span>
               </div>
               <button
                 type="button"
-                style={{
-                  padding: "8px 16px",
-                  background: "transparent",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8,
-                  color: "#f8fafc",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  marginTop: 8,
-                }}
+                className="px-4 py-2 bg-transparent border border-white/10 rounded-lg text-slate-50 text-xs font-semibold mt-2 hover:bg-white/5 transition-colors"
               >
                 Procurar Arquivo
               </button>
               <input
                 type="file"
                 ref={fileInputRef}
-                style={{ display: "none" }}
+                className="hidden"
                 accept=".pdf,.txt,.docx,.md"
                 onChange={onFileChange}
               />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
-              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#64748b", letterSpacing: "0.1em" }}>OU TEXTO MANUAL</span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+            <div className="flex items-center gap-4">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase">OU TEXTO MANUAL</span>
+              <div className="flex-1 h-px bg-white/10" />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>Título do Documento *</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-200">Título do Documento *</label>
               <input
                 type="text"
                 placeholder="Ex: Procedimentos de Vendas 2024"
                 value={newDoc.title}
                 onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
                 required
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                  color: "#f8fafc",
-                  fontSize: "0.9rem",
-                  outline: "none",
-                }}
+                className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 transition-colors"
               />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e2e8f0" }}>Conteúdo *</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-200">Conteúdo *</label>
               <textarea
                 placeholder="Cole o texto que deseja indexar..."
                 value={newDoc.content}
                 onChange={(e) => setNewDoc({ ...newDoc, content: e.target.value })}
                 required
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                  color: "#f8fafc",
-                  fontSize: "0.9rem",
-                  outline: "none",
-                  minHeight: 180,
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                }}
+                className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none min-h-[180px] resize-y font-inherit focus:border-violet-400 transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={indexing}
-              style={{
-                width: "100%",
-                padding: "16px",
-                background: indexing ? "rgba(124, 58, 237, 0.4)" : "linear-gradient(135deg, #a78bfa, #8b5cf6)",
-                border: "none",
-                borderRadius: 12,
-                color: "white",
-                fontSize: "0.95rem",
-                fontWeight: 700,
-                cursor: indexing ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                marginTop: 8,
-                boxShadow: indexing ? "none" : "0 8px 25px rgba(124, 58, 237, 0.25)",
-                transition: "all 0.2s",
-              }}
+              className={`w-full p-4 border-none rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 mt-2 transition-all ${indexing ? 'bg-violet-600/40 cursor-not-allowed shadow-none' : 'bg-gradient-to-br from-violet-400 to-violet-600 cursor-pointer shadow-[0_8px_25px_rgba(124,58,237,0.25)] hover:scale-[1.02]'}`}
             >
               {indexing ? (
-                <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", animation: "spin 1s linear infinite" }} />
+                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               ) : (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>

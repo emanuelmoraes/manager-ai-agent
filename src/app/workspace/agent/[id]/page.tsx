@@ -118,24 +118,15 @@ export default function AgentConfigPage() {
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        background: "radial-gradient(ellipse at top left, #1a103c 0%, #03020a 100%)",
-        overflowY: "auto",
-        color: "#f8fafc",
-      }}
-    >
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px", width: "100%" }}>
+    <div className="flex flex-col h-screen bg-[radial-gradient(ellipse_at_top_left,_#1a103c_0%,_#03020a_100%)] overflow-y-auto text-slate-50">
+      <div className="max-w-5xl mx-auto w-full px-4 md:px-8 py-8 md:py-10">
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
           <div>
-            <h1 style={{ fontSize: "2rem", fontWeight: 800, margin: 0 }}>
+            <h1 className="text-2xl md:text-3xl font-extrabold m-0">
               {isEditing ? "Edit Agent" : "Create New Agent"}
             </h1>
-            <p style={{ color: "#94a3b8", marginTop: 8 }}>
+            <p className="text-slate-400 mt-2 text-sm md:text-base">
               {isEditing
                 ? "Modify the properties, instructions, and AI provider of this agent."
                 : "Create a new custom agent to integrate into your workspace."}
@@ -143,224 +134,168 @@ export default function AgentConfigPage() {
           </div>
           <button
             onClick={() => router.push("/workspace")}
-            style={{
-              padding: "8px 16px",
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 8,
-              color: "#f8fafc",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
+            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-50 font-semibold cursor-pointer hover:bg-white/10 transition-colors w-full md:w-auto text-center"
           >
             ← Back to Workspace
           </button>
         </div>
 
         {formError && (
-          <div
-            style={{
-              padding: "12px 16px",
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.2)",
-              borderRadius: 8,
-              color: "#f87171",
-              fontSize: "0.9rem",
-              marginBottom: 24,
-            }}
-          >
+          <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm mb-6">
             {formError}
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 32 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {/* Name */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Name *</label>
-              <input
-                type="text"
-                placeholder="e.g. Coder, Designer"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8,
-                  color: "#f8fafc",
-                  fontSize: "0.95rem",
-                  outline: "none",
-                }}
-              />
-            </div>
+          <div className="flex flex-col gap-6">
+            
+            {/* General Information Card */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5 md:p-6 flex flex-col gap-5 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-200 m-0 border-b border-white/5 pb-3">General Information</h2>
+              
+              {/* Name */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Coder, Designer"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-slate-50 text-sm outline-none focus:border-violet-500 transition-colors"
+                />
+              </div>
 
-            {/* Role */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Role / Specialty *</label>
-              <input
-                type="text"
-                placeholder="e.g. Development & Debugging"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8,
-                  color: "#f8fafc",
-                  fontSize: "0.95rem",
-                  outline: "none",
-                }}
-              />
-            </div>
+              {/* Role */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Role / Specialty *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Development & Debugging"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-slate-50 text-sm outline-none focus:border-violet-500 transition-colors"
+                />
+              </div>
 
-            {/* Provider & Model */}
-            <ProviderConfig
-              provider={provider}
-              setProvider={setProvider}
-              model={model}
-              setModel={setModel}
-              temperature={temperature}
-              setTemperature={setTemperature}
-              reasoningEffort={reasoningEffort}
-              setReasoningEffort={setReasoningEffort}
-            />
-
-            {/* Icon & Color */}
-            <div style={{ display: "flex", gap: 16 }}>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Icon</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {["🤖", "💻", "🎨", "🚀", "📊", "🔍", "✍️", "🛡️", "🔑"].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setIcon(emoji)}
-                      style={{
-                        fontSize: "1.4rem",
-                        padding: "8px 12px",
-                        background: icon === emoji ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.03)",
-                        border: `1px solid ${icon === emoji ? "#7c3aed" : "rgba(255,255,255,0.08)"}`,
-                        borderRadius: 8,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+              {/* Icon & Color */}
+              <div className="flex flex-col sm:flex-row gap-6 mt-2">
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Icon</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {["🤖", "💻", "🎨", "🚀", "📊", "🔍", "✍️", "🛡️", "🔑"].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setIcon(emoji)}
+                        className={`text-xl p-2 rounded-lg cursor-pointer transition-colors ${icon === emoji ? 'bg-violet-500/20 border-violet-500 border' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Color</label>
+                  <div className="flex gap-3 flex-wrap">
+                    {[
+                      { name: "Violet", hex: "#a78bfa" },
+                      { name: "Blue", hex: "#60a5fa" },
+                      { name: "Green", hex: "#34d399" },
+                      { name: "Orange", hex: "#fb923c" },
+                      { name: "Pink", hex: "#f472b6" },
+                      { name: "Cyan", hex: "#22d3ee" },
+                    ].map((colorItem) => (
+                      <button
+                        key={colorItem.hex}
+                        type="button"
+                        onClick={() => setColor(colorItem.hex)}
+                        className={`w-8 h-8 rounded-full cursor-pointer transition-all ${color === colorItem.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1a103c]' : ''}`}
+                        style={{ background: colorItem.hex }}
+                        title={colorItem.name}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Color</label>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  {[
-                    { name: "Violet", hex: "#a78bfa" },
-                    { name: "Blue", hex: "#60a5fa" },
-                    { name: "Green", hex: "#34d399" },
-                    { name: "Orange", hex: "#fb923c" },
-                    { name: "Pink", hex: "#f472b6" },
-                    { name: "Cyan", hex: "#22d3ee" },
-                  ].map((colorItem) => (
-                    <button
-                      key={colorItem.hex}
-                      type="button"
-                      onClick={() => setColor(colorItem.hex)}
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        background: colorItem.hex,
-                        border: color === colorItem.hex ? "3px solid #ffffff" : "3px solid transparent",
-                        cursor: "pointer",
-                      }}
-                      title={colorItem.name}
-                    />
-                  ))}
-                </div>
-              </div>
+            </div>
+
+            {/* AI Configuration Card */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5 md:p-6 flex flex-col gap-5 shadow-sm">
+               <h2 className="text-lg font-bold text-slate-200 m-0 border-b border-white/5 pb-3">AI Configuration</h2>
+               <div className="flex flex-col gap-4">
+                 <ProviderConfig
+                  provider={provider}
+                  setProvider={setProvider}
+                  model={model}
+                  setModel={setModel}
+                  temperature={temperature}
+                  setTemperature={setTemperature}
+                  reasoningEffort={reasoningEffort}
+                  setReasoningEffort={setReasoningEffort}
+                 />
+               </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {/* Description */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Instructions</label>
-              <textarea
-                placeholder="Describe the rules and purpose of this agent..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                style={{
-                  flex: 1,
-                  minHeight: 180,
-                  padding: "12px 16px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 8,
-                  color: "#f8fafc",
-                  fontSize: "0.95rem",
-                  outline: "none",
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                }}
-              />
-            </div>
+          <div className="flex flex-col gap-6">
+            
+            {/* Behavior & Tools Card */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5 md:p-6 flex flex-col gap-6 flex-1 shadow-sm">
+               <h2 className="text-lg font-bold text-slate-200 m-0 border-b border-white/5 pb-3">Behavior & Tools</h2>
+              
+              {/* Description */}
+              <div className="flex flex-col gap-2 flex-1 min-h-[250px]">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Instructions</label>
+                <textarea
+                  placeholder="Describe the rules and purpose of this agent..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="flex-1 w-full p-4 bg-white/5 border border-white/10 rounded-lg text-slate-50 text-sm outline-none resize-y font-inherit focus:border-violet-500 transition-colors"
+                />
+              </div>
 
-            {/* MCP Servers */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>MCP Servers</label>
-              {availableMcpServers.length === 0 ? (
-                <p style={{ color: "#64748b", fontSize: "0.85rem", margin: "4px 0" }}>No MCP servers registered.</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 200, overflowY: "auto", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: 8, padding: 16 }}>
-                  {availableMcpServers.map((srv) => {
-                    const isChecked = mcpServers.includes(srv.id);
-                    return (
-                      <label key={srv.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.9rem", color: "#e2e8f0", cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {
-                            if (isChecked) {
-                              setMcpServers(mcpServers.filter((id) => id !== srv.id));
-                            } else {
-                              setMcpServers([...mcpServers, srv.id]);
-                            }
-                          }}
-                          style={{ cursor: "pointer", accentColor: "#7c3aed", width: 16, height: 16 }}
-                        />
-                        <span>{srv.name || srv.id}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              {/* MCP Servers */}
+              <div className="flex flex-col gap-2 mt-auto">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">MCP Servers</label>
+                {availableMcpServers.length === 0 ? (
+                  <p className="text-slate-500 text-sm m-0 py-1">No MCP servers registered.</p>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto bg-black/20 border border-white/5 rounded-lg p-4">
+                    {availableMcpServers.map((srv) => {
+                      const isChecked = mcpServers.includes(srv.id);
+                      return (
+                        <label key={srv.id} className="flex items-center gap-3 text-sm text-slate-200 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setMcpServers(mcpServers.filter((id) => id !== srv.id));
+                              } else {
+                                setMcpServers([...mcpServers, srv.id]);
+                              }
+                            }}
+                            className="cursor-pointer accent-violet-600 w-4 h-4 rounded"
+                          />
+                          <span className="truncate">{srv.name || srv.id}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Action Button */}
-        <div style={{ marginTop: 40, display: "flex", justifyContent: "flex-end" }}>
+        <div className="mt-8 flex justify-end">
           <button
             type="button"
             onClick={handleSave}
-            style={{
-              padding: "12px 24px",
-              background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
-              border: "none",
-              borderRadius: 8,
-              color: "white",
-              fontSize: "1rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 4px 16px rgba(124,58,237,0.3)",
-              transition: "transform 0.1s ease",
-            }}
-            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            className="w-full md:w-auto px-8 py-3 bg-gradient-to-br from-violet-600 to-indigo-600 border-none rounded-lg text-white font-bold text-base cursor-pointer shadow-[0_4px_16px_rgba(124,58,237,0.3)] transition-transform active:scale-95"
           >
             {isEditing ? "Save Changes" : "Create Agent"}
           </button>

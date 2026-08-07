@@ -70,100 +70,69 @@ export function IAProvidersTab({
 }: IAProvidersTabProps) {
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 900, margin: "0 auto", width: "100%", padding: "40px 0" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#f8fafc", margin: 0, opacity: 0 }}>
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full py-6 md:py-10 px-4 md:px-0">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl md:text-2xl font-bold text-slate-50 m-0 opacity-0 h-0 overflow-hidden">
           Provedores de IA
         </h2>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="flex flex-col gap-6">
         {PROVIDERS.map((provider) => {
           const isConfigured = status[provider.id];
           return (
-            <div key={provider.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div key={provider.id} className="flex flex-col gap-2">
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 16,
-                  padding: "16px 24px",
-                  gap: 32,
-                }}
+                className="flex flex-col md:flex-row md:items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 gap-6 md:gap-8 shadow-sm"
               >
                 {/* Left Side: Info */}
-                <div style={{ display: "flex", alignItems: "center", gap: 16, width: 260, flexShrink: 0 }}>
+                <div className="flex items-center gap-4 w-full md:w-[260px] shrink-0">
                   <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
                       background: `linear-gradient(135deg, ${provider.color}30, ${provider.color}05)`,
                       border: `1px solid ${provider.color}40`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 24,
                     }}
                   >
                     {provider.icon}
                   </div>
                   <div>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#f8fafc" }}>{provider.name}</div>
-                    <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>{provider.description}</div>
+                    <div className="text-base md:text-lg font-bold text-slate-50">{provider.name}</div>
+                    <div className="text-xs md:text-sm text-slate-400">{provider.description}</div>
                   </div>
                 </div>
 
                 {/* Right Side: Input and Status */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <div className="flex-1 flex flex-col gap-2 w-full">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">
                       Chave de API
                     </span>
                     <div
+                      className="flex items-center gap-1.5 px-2 py-1 md:px-3 border rounded-full"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "4px 10px",
                         background: isConfigured ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)",
-                        border: `1px solid ${isConfigured ? "rgba(34, 197, 94, 0.2)" : "rgba(249, 115, 22, 0.2)"}`,
-                        borderRadius: 12,
+                        borderColor: isConfigured ? "rgba(34, 197, 94, 0.2)" : "rgba(249, 115, 22, 0.2)",
                       }}
                     >
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: isConfigured ? "#22c55e" : "#f97316" }} />
-                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: isConfigured ? "#4ade80" : "#fb923c" }}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: isConfigured ? "#22c55e" : "#f97316" }} />
+                      <span className="text-[9px] md:text-[10px] font-bold" style={{ color: isConfigured ? "#4ade80" : "#fb923c" }}>
                         {isConfigured ? "CONFIGURADO" : "NÃO CONFIGURADO"}
                       </span>
                     </div>
                   </div>
 
-                  <div style={{ position: "relative" }}>
+                  <div className="relative">
                     <input
                       type="password"
-                      placeholder={isConfigured ? "•••••••••••••••••••••••• (Configurado - Digite para substituir)" : "Insira a chave da API (sk-...)"}
+                      placeholder={isConfigured ? "•••••••••••••••••••••••• (Configurado)" : "Insira a chave da API (sk-...)"}
                       value={keys[provider.id] || ""}
                       onChange={(e) => setKeys((prev) => ({ ...prev, [provider.id]: e.target.value }))}
-                      style={{
-                        width: "100%",
-                        padding: "12px 16px",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                        color: "#f8fafc",
-                        fontSize: "0.95rem",
-                        outline: "none",
-                        transition: "border 0.2s",
-                      }}
-                      onFocus={(e) => (e.target.style.borderColor = "rgba(167, 139, 250, 0.5)")}
-                      onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-slate-50 text-sm outline-none transition-colors focus:border-violet-400/50"
                     />
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <a href={provider.link} target="_blank" rel="noreferrer" style={{ fontSize: "0.75rem", color: "#a78bfa", textDecoration: "none" }}>
+                  <div className="text-right mt-1">
+                    <a href={provider.link} target="_blank" rel="noreferrer" className="text-[11px] md:text-xs text-violet-400 no-underline hover:text-violet-300 transition-colors">
                       Obter chave no {provider.name.split(" ")[0]} ↗
                     </a>
                   </div>
@@ -174,28 +143,14 @@ export function IAProvidersTab({
         })}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+      <div className="flex justify-end mt-4">
         <button
           onClick={handleSaveKeys}
           disabled={saving}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "12px 24px",
-            background: saving ? "rgba(139, 92, 246, 0.4)" : "linear-gradient(135deg, #a78bfa, #8b5cf6)",
-            border: "none",
-            borderRadius: 12,
-            color: "white",
-            fontSize: "0.95rem",
-            fontWeight: 700,
-            cursor: saving ? "not-allowed" : "pointer",
-            boxShadow: saving ? "none" : "0 4px 20px rgba(139, 92, 246, 0.3)",
-            transition: "all 0.2s",
-          }}
+          className={`flex items-center justify-center gap-2 px-6 py-3 border-none rounded-xl text-white text-sm md:text-base font-bold transition-all w-full md:w-auto ${saving ? 'bg-violet-500/40 cursor-not-allowed shadow-none' : 'bg-gradient-to-br from-violet-400 to-violet-600 cursor-pointer shadow-[0_4px_20px_rgba(139,92,246,0.3)] hover:scale-[1.02]'}`}
         >
           {saving ? (
-            <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", animation: "spin 1s linear infinite" }} />
+            <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
           ) : (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
