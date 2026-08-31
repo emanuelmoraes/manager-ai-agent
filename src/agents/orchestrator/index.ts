@@ -3,6 +3,7 @@ import { ai } from '@/lib/genkit';
 import { getMcpTools } from '@/lib/mcp/registry';
 import { searchKnowledge } from '@/lib/rag/store';
 import { getProviderKeys } from '@/lib/config/providers';
+import { createAgentMemoryTools, searchAgentMemories } from '@/lib/memory/store';
 
 const WorkflowInputSchema = z.object({
   task: z.string(),
@@ -99,11 +100,26 @@ export const orchestratorFlow = ai.defineFlow(
         else if (agent.provider === 'openai') apiKey = keys.openai || "";
         else if (agent.provider === 'anthropic') apiKey = keys.anthropic || "";
 
+        // Carregar memórias e ferramentas de memória do agente
+        let memoryContext = "";
+        let agentMemoryTools: any[] = [];
+        try {
+          const relevantMemories = await searchAgentMemories(agent.id, task, 4, 0.35);
+          if (relevantMemories.length > 0) {
+            memoryContext = "\n\n## SUAS MEMÓRIAS PERSISTENTES (Fatos e preferências lembradas de execuções anteriores):\n" +
+              relevantMemories.map((m) => `- [${m.category || 'Fato'}]: ${m.content}`).join('\n');
+          }
+          const { salvarMemoriaTool, consultarMemoriasTool } = createAgentMemoryTools(agent.id);
+          agentMemoryTools = [salvarMemoriaTool, consultarMemoriasTool];
+        } catch (e) {
+          console.warn(`[orchestrator] Erro ao carregar memórias do agente ${agent.name}:`, e);
+        }
+
         const systemPrompt = `Você é o agente '${agent.name}'.
           
 ## SUA IDENTIDADE E ESPECIALIDADE
 Papel/Especialidade: ${agent.role}
-Descrição: ${agent.description}
+Descrição: ${agent.description}${memoryContext}
 
 ## DIRETRIZES DE COMPORTAMENTO E TAREFA
 Você faz parte de um pipeline colaborativo de agentes autônomos. Execute sua tarefa com base no contexto acumulado e no objetivo geral do usuário.
@@ -111,6 +127,7 @@ Você faz parte de um pipeline colaborativo de agentes autônomos. Execute sua t
 2. Seja direto, claro e forneça respostas acionáveis.
 3. Não invente informações. Se não souber, admita ou busque o contexto.
 4. OBRIGATÓRIO: Se a tarefa envolver processos, manuais, regras ou qualquer contexto específico da empresa/negócio, VOCÊ DEVE OBRIGATORIAMENTE USAR a ferramenta 'consultarBaseConhecimento' (RAG) antes de gerar o conteúdo final. A base de conhecimento local é sua fonte primária da verdade.
+5. MEMÓRIA: Você pode usar a ferramenta 'salvarMemoria' para guardar fatos cruciais ou 'consultarMemorias' para buscar em suas memórias passadas.
 
 ## RESTRIÇÕES
 - Mantenha-se estritamente no seu papel ('${agent.role}').
@@ -133,7 +150,7 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
             model: agent.model || 'googleai/gemini-2.5-pro',
             system: systemPrompt,
             prompt: promptText,
-            tools: [...agentMcpTools, consultarBaseConhecimentoTool],
+            tools: [...agentMcpTools, consultarBaseConhecimentoTool, ...agentMemoryTools],
             config: {
               apiKey: apiKey,
               temperature: agent.temperature ?? 0.7,

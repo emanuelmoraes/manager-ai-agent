@@ -274,11 +274,15 @@ export default function WorkspacePage() {
     setChatLoading(true);
 
     try {
+      const historyToSend = currentHistory.slice(-30);
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          agentId: agent.id,
           message: userMsg.content,
+          history: historyToSend,
           systemPrompt: `Role: ${agent.role}\nDescription: ${agent.description}`,
           provider: agent.provider,
           model: agent.model,

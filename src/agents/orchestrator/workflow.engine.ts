@@ -3,6 +3,7 @@ import { ai } from '@/lib/genkit';
 import { getMcpTools } from '@/lib/mcp/registry';
 import { searchKnowledge } from '@/lib/rag/store';
 import { getProviderKeys } from '@/lib/config/providers';
+import { createAgentMemoryTools, searchAgentMemories } from '@/lib/memory/store';
 import { WorkflowNode, WorkflowEdge, WorkflowLogChunk } from '@/types/workflow';
 
 const WorkflowEngineInputSchema = z.object({
@@ -117,12 +118,28 @@ export const workflowEngineFlow = ai.defineFlow(
           if (agent.provider === 'openai') apiKey = keys.openai || '';
           else if (agent.provider === 'anthropic') apiKey = keys.anthropic || '';
 
+          // Carregar memórias do agente
+          let memoryContext = '';
+          let agentMemoryTools: any[] = [];
+          try {
+            const relevantMemories = await searchAgentMemories(agent.id, currentContext, 3, 0.35);
+            if (relevantMemories.length > 0) {
+              memoryContext =
+                '\n\n## SUAS MEMÓRIAS PERSISTENTES:\n' +
+                relevantMemories.map((m) => `- [${m.category || 'Fato'}]: ${m.content}`).join('\n');
+            }
+            const { salvarMemoriaTool, consultarMemoriasTool } = createAgentMemoryTools(agent.id);
+            agentMemoryTools = [salvarMemoriaTool, consultarMemoriasTool];
+          } catch (e) {
+            console.warn(`[workflow-engine] Erro ao carregar memórias do agente ${agent.name}:`, e);
+          }
+
           const systemPrompt = `Você é o agente "${agent.name}", atuando como "${agent.role}".
-Descrição: ${agent.description}
+Descrição: ${agent.description}${memoryContext}
 
 Instruções e Tarefas:
 - Analise a entrada recebida e execute seu papel com rigor e qualidade.
-- Se necessário, utilize as ferramentas disponíveis.
+- Se necessário, utilize as ferramentas disponíveis (incluindo ferramentas de memória).
 - Seja objetivo e forneça respostas bem estruturadas.`;
 
           const prompt = `Contexto Acumulado do Workflow:\n${currentContext}\n\nSua tarefa atual: Responda ou processe o contexto de acordo com seu papel.`;
@@ -135,7 +152,7 @@ Instruções e Tarefas:
               },
               system: systemPrompt,
               prompt: prompt,
-              tools: mcpTools as any,
+              tools: [...mcpTools, ...agentMemoryTools] as any,
             });
 
             const outputText = response.text || 'Sem resposta gerada.';
