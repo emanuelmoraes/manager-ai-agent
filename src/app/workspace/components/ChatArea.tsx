@@ -205,7 +205,6 @@ export function ChatArea({
                         color: "#e2e8f0",
                         fontSize: "0.9rem",
                         lineHeight: 1.6,
-                        whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
                       }}
                     >
