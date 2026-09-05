@@ -11,6 +11,7 @@ import { Timestamp } from "firebase/firestore";
 import { getAgentsFromFirebase } from "@/lib/firebase/sync";
 import type { ApiTokenRecord } from "@/types/token";
 import { AiProviderId, Agent } from "@/app/workspace/types";
+import { fetchTokensAction, revokeTokenAction } from "./actions";
 
 interface KnowledgeDoc {
   id: string;
@@ -365,16 +366,11 @@ export default function SettingsPage() {
   const loadTokens = async () => {
     setLoadingTokens(true);
     try {
-      const res = await fetch("/api/settings/tokens");
-      const data = await res.json();
-      if (res.ok && data.tokens) {
-        setTokens(data.tokens);
-      } else {
-        notifyError(data.error || "Erro ao carregar tokens de API.");
-      }
-    } catch (err: any) {
+      const tokenList = await fetchTokensAction();
+      setTokens(tokenList);
+    } catch (err: unknown) {
       console.error("Erro ao carregar tokens:", err);
-      notifyError("Erro de comunicação ao listar tokens.");
+      notifyError("Erro ao carregar tokens de API.");
     } finally {
       setLoadingTokens(false);
     }
@@ -398,25 +394,16 @@ export default function SettingsPage() {
 
   const handleRevokeToken = async (id: string) => {
     try {
-      const res = await fetch("/api/settings/tokens", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        notifySuccess("Token revogado com sucesso!");
-        setTokens((prev) =>
-          prev.map((tok) =>
-            tok.id === id ? { ...tok, status: "revoked", revokedAt: Timestamp.now() } : tok
-          )
-        );
-      } else {
-        notifyError(data.error || "Erro ao revogar token.");
-      }
-    } catch (err: any) {
+      await revokeTokenAction(id);
+      notifySuccess("Token revogado com sucesso!");
+      setTokens((prev) =>
+        prev.map((tok) =>
+          tok.id === id ? { ...tok, status: "revoked", revokedAt: Timestamp.now() } : tok
+        )
+      );
+    } catch (err: unknown) {
       console.error("Erro ao revogar token:", err);
-      notifyError("Erro de comunicação ao revogar token.");
+      notifyError("Erro ao revogar token.");
     }
   };
 

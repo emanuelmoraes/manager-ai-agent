@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Key, Copy, Check, X, ShieldCheck, AlertCircle, Bot, RefreshCw, Terminal } from "lucide-react";
 import type { ApiTokenRecord } from "@/types/token";
+import { createTokenAction } from "../actions";
 
 interface AgentOption {
   id: string;
@@ -42,26 +43,13 @@ export function CreateTokenModal({
     setError(null);
 
     try {
-      const res = await fetch("/api/settings/tokens", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          agentId: agentId.trim(),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.token && data.record) {
-        setGeneratedToken(data.token);
-        onTokenCreated({ token: data.token, record: data.record });
-      } else {
-        setError(data.error || "Falha ao gerar o token de API.");
-      }
-    } catch (err: any) {
+      const data = await createTokenAction(name.trim(), agentId.trim());
+      setGeneratedToken(data.token);
+      onTokenCreated({ token: data.token, record: data.record });
+    } catch (err: unknown) {
       console.error(err);
-      setError("Erro de comunicação ao criar o token.");
+      const message = err instanceof Error ? err.message : "Erro ao gerar o token de API.";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
