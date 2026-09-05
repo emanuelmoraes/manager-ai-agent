@@ -2,8 +2,8 @@ import React from "react";
 import Link from "next/link";
 
 interface TopNavigationProps {
-  activeTab: "keys" | "knowledge" | "mcp";
-  setActiveTab: (tab: "keys" | "knowledge" | "mcp") => void;
+  activeTab: "keys" | "knowledge" | "mcp" | "tokens";
+  setActiveTab: (tab: "keys" | "knowledge" | "mcp" | "tokens") => void;
 }
 
 export function TopNavigation({ activeTab, setActiveTab }: TopNavigationProps) {
@@ -19,6 +19,7 @@ export function TopNavigation({ activeTab, setActiveTab }: TopNavigationProps) {
               { id: "keys", label: "Provedores de IA" },
               { id: "knowledge", label: "Base de Conhecimento (RAG)" },
               { id: "mcp", label: "Servidores MCP" },
+              { id: "tokens", label: "Tokens de API" },
             ] as const
           ).map((tab) => {
             const isActive = activeTab === tab.id;

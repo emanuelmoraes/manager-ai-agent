@@ -6,7 +6,11 @@ import { TopNavigation } from "./components/TopNavigation";
 import { IAProvidersTab } from "./components/IAProvidersTab";
 import { RAGTab } from "./components/RAGTab";
 import { MCPTab } from "./components/MCPTab";
-import { AiProviderId } from "@/app/workspace/types";
+import { TokensTab } from "./components/TokensTab";
+import { Timestamp } from "firebase/firestore";
+import { getAgentsFromFirebase } from "@/lib/firebase/sync";
+import type { ApiTokenRecord } from "@/types/token";
+import { AiProviderId, Agent } from "@/app/workspace/types";
 
 interface KnowledgeDoc {
   id: string;
@@ -25,7 +29,7 @@ interface McpServer {
   env?: Record<string, string>;
 }
 
-type SettingsTab = "keys" | "knowledge" | "mcp";
+type SettingsTab = "keys" | "knowledge" | "mcp" | "tokens";
 
 export default function SettingsPage() {
   const { notifySuccess, notifyError, notifyWarning } = useToast();
@@ -63,6 +67,11 @@ export default function SettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [testingMcp, setTestingMcp] = useState<string | null>(null);
 
+  // Tokens State
+  const [tokens, setTokens] = useState<ApiTokenRecord[]>([]);
+  const [loadingTokens, setLoadingTokens] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>([]);
+
   // --- Effects ---
   useEffect(() => {
     fetch("/api/settings/keys")
@@ -82,6 +91,9 @@ export default function SettingsPage() {
       loadKnowledgeDocs();
     } else if (activeTab === "mcp") {
       loadMcpServers();
+    } else if (activeTab === "tokens") {
+      loadTokens();
+      loadAgents();
     }
   }, [activeTab]);
 
@@ -94,7 +106,7 @@ export default function SettingsPage() {
       if (data.success) {
         setDocs(data.data);
       }
-      
+
       const configRes = await fetch("/api/settings/rag");
       if (configRes.ok) {
         const configData = await configRes.json();
@@ -349,14 +361,73 @@ export default function SettingsPage() {
     });
   };
 
+  // --- Tokens Functions ---
+  const loadTokens = async () => {
+    setLoadingTokens(true);
+    try {
+      const res = await fetch("/api/settings/tokens");
+      const data = await res.json();
+      if (res.ok && data.tokens) {
+        setTokens(data.tokens);
+      } else {
+        notifyError(data.error || "Erro ao carregar tokens de API.");
+      }
+    } catch (err: any) {
+      console.error("Erro ao carregar tokens:", err);
+      notifyError("Erro de comunicação ao listar tokens.");
+    } finally {
+      setLoadingTokens(false);
+    }
+  };
+
+  const loadAgents = async () => {
+    try {
+      const fAgents = await getAgentsFromFirebase();
+      if (fAgents && Array.isArray(fAgents)) {
+        setAgents(fAgents as Agent[]);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar agentes:", err);
+    }
+  };
+
+  const handleTokenCreated = (data: { token: string; record: ApiTokenRecord }) => {
+    notifySuccess("Token de API gerado com sucesso!");
+    setTokens((prev) => [data.record, ...prev]);
+  };
+
+  const handleRevokeToken = async (id: string) => {
+    try {
+      const res = await fetch("/api/settings/tokens", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        notifySuccess("Token revogado com sucesso!");
+        setTokens((prev) =>
+          prev.map((tok) =>
+            tok.id === id ? { ...tok, status: "revoked", revokedAt: Timestamp.now() } : tok
+          )
+        );
+      } else {
+        notifyError(data.error || "Erro ao revogar token.");
+      }
+    } catch (err: any) {
+      console.error("Erro ao revogar token:", err);
+      notifyError("Erro de comunicação ao revogar token.");
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "radial-gradient(ellipse at top left, #1a103c 0%, #03020a 100%)", overflow: "hidden" }}>
       <TopNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-      
+
       <main style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         {activeTab === "keys" && (
           <div style={{ animation: "fade-in 0.3s ease-out", width: "100%", flex: 1 }}>
-            <IAProvidersTab 
+            <IAProvidersTab
               keys={keys}
               setKeys={setKeys}
               status={status}
@@ -365,10 +436,10 @@ export default function SettingsPage() {
             />
           </div>
         )}
-        
+
         {activeTab === "knowledge" && (
           <div style={{ animation: "fade-in 0.3s ease-out", width: "100%", flex: 1 }}>
-            <RAGTab 
+            <RAGTab
               docs={docs}
               newDoc={newDoc}
               setNewDoc={setNewDoc}
@@ -383,10 +454,10 @@ export default function SettingsPage() {
             />
           </div>
         )}
-        
+
         {activeTab === "mcp" && (
           <div style={{ animation: "fade-in 0.3s ease-out", width: "100%", flex: 1 }}>
-            <MCPTab 
+            <MCPTab
               mcpServers={mcpServers}
               loadingMcp={loadingMcp}
               mcpForm={mcpForm}
@@ -399,6 +470,19 @@ export default function SettingsPage() {
               handleEditMcpServer={handleEditMcpServer}
               handleTestMcpServer={handleTestMcpServer}
               handleCancelEdit={handleCancelEdit}
+            />
+          </div>
+        )}
+
+        {activeTab === "tokens" && (
+          <div style={{ animation: "fade-in 0.3s ease-out", width: "100%", flex: 1 }}>
+            <TokensTab
+              tokens={tokens}
+              agents={agents}
+              loadingTokens={loadingTokens}
+              onRefreshTokens={loadTokens}
+              onTokenCreated={handleTokenCreated}
+              onRevokeToken={handleRevokeToken}
             />
           </div>
         )}
