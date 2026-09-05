@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Agent, ChatSession } from "../types";
+import { FiCpu, FiEdit2, FiTrash2, FiMessageSquare } from "react-icons/fi";
+import { AgentIcon } from "./AgentIcon";
 
 interface AgentSidebarProps {
   agents: Agent[];
@@ -176,7 +178,9 @@ export function AgentSidebar({
           <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
             {agents.length === 0 ? (
               <div style={{ textAlign: "center", opacity: 0.5, marginTop: 40 }}>
-                <span style={{ fontSize: "2rem" }}>🤖</span>
+                <div style={{ display: "flex", justifyContent: "center", color: "#64748b", marginBottom: 8 }}>
+                  <FiCpu size={32} />
+                </div>
                 <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: 10 }}>Nenhum agente.</p>
               </div>
             ) : (
@@ -216,7 +220,7 @@ export function AgentSidebar({
                               flexShrink: 0,
                             }}
                           >
-                            {agent.icon}
+                            <AgentIcon icon={agent.icon} size={20} />
                           </div>
                           <div style={{ overflow: "hidden" }}>
                             <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#f8fafc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -249,7 +253,7 @@ export function AgentSidebar({
                               cursor: "pointer",
                             }}
                           >
-                            ✏️
+                            <FiEdit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDeleteAgent(agent.id)}
@@ -267,7 +271,7 @@ export function AgentSidebar({
                               cursor: "pointer",
                             }}
                           >
-                            🗑️
+                            <FiTrash2 size={14} />
                           </button>
                         </div>
                       </div>
@@ -301,8 +305,9 @@ export function AgentSidebar({
                                 cursor: "pointer",
                               }}
                             >
-                              <span style={{ fontSize: "0.8rem", color: isActiveSess ? "#f8fafc" : "#cbd5e1", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                                💬 {session.title}
+                              <span style={{ fontSize: "0.8rem", color: isActiveSess ? "#f8fafc" : "#cbd5e1", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
+                                <FiMessageSquare size={13} style={{ flexShrink: 0, opacity: 0.7 }} />
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.title}</span>
                               </span>
                               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                                 <button
@@ -311,20 +316,20 @@ export function AgentSidebar({
                                     const newTitle = prompt("Renomear sessão:", session.title);
                                     if (newTitle) handleRenameSession(session.id, newTitle);
                                   }}
-                                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.75rem", opacity: 0.7 }}
+                                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.75rem", opacity: 0.7, color: "#94a3b8" }}
                                   title="Renomear"
                                 >
-                                  ✏️
+                                  <FiEdit2 size={12} />
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDeleteSession(session.id);
                                   }}
-                                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.75rem", opacity: 0.7 }}
+                                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.75rem", opacity: 0.7, color: "#ef4444" }}
                                   title="Excluir"
                                 >
-                                  🗑️
+                                  <FiTrash2 size={12} />
                                 </button>
                               </div>
                             </div>
@@ -389,7 +394,7 @@ export function AgentSidebar({
                           fontSize: 18,
                         }}
                       >
-                        {agent.icon}
+                        <AgentIcon icon={agent.icon} size={18} />
                       </div>
                       <div>
                         <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1" }}>{agent.name}</div>
@@ -513,7 +518,7 @@ export function AgentSidebar({
                   transition: "all 0.2s",
                 }}
               >
-                {agent.icon}
+                <AgentIcon icon={agent.icon} size={20} />
                 {isSelected && (
                   <span
                     style={{
@@ -597,40 +602,6 @@ export function AgentSidebar({
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <button
-              onClick={openCreateModal}
-              title="Criar Novo Agente"
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 8,
-                color: "#e2e8f0",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "4px 8px",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-                e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.4)";
-                e.currentTarget.style.color = "#a78bfa";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                e.currentTarget.style.color = "#e2e8f0";
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Novo
-            </button>
-            <button
               onClick={() => setIsCollapsed && setIsCollapsed(true)}
               title="Recolher menu lateral"
               style={{
@@ -658,7 +629,9 @@ export function AgentSidebar({
         <div style={{ flex: 1, overflowY: "auto", padding: "0 16px" }}>
           {agents.length === 0 ? (
             <div style={{ textAlign: "center", opacity: 0.5, marginTop: 40 }}>
-              <span style={{ fontSize: "2rem" }}>🤖</span>
+              <div style={{ display: "flex", justifyContent: "center", color: "#64748b", marginBottom: 8 }}>
+                <FiCpu size={32} />
+              </div>
               <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: 10 }}>Nenhum agente cadastrado.</p>
             </div>
           ) : (
@@ -702,7 +675,7 @@ export function AgentSidebar({
                               flexShrink: 0,
                             }}
                           >
-                            {agent.icon}
+                            <AgentIcon icon={agent.icon} size={22} />
                           </div>
                           <div style={{ overflow: "hidden" }}>
                             <div
@@ -842,9 +815,13 @@ export function AgentSidebar({
                                     whiteSpace: "nowrap",
                                     textOverflow: "ellipsis",
                                     fontWeight: isActiveSess ? 600 : 400,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
                                   }}
                                 >
-                                  💬 {session.title}
+                                  <FiMessageSquare size={13} style={{ flexShrink: 0, opacity: 0.7 }} />
+                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.title}</span>
                                 </span>
                                 <div style={{ display: "flex", gap: 4, flexShrink: 0, opacity: 0.8 }}>
                                   <button
@@ -860,10 +837,11 @@ export function AgentSidebar({
                                       fontSize: "0.75rem",
                                       padding: "2px 4px",
                                       borderRadius: 4,
+                                      color: "#94a3b8",
                                     }}
                                     title="Renomear"
                                   >
-                                    ✏️
+                                    <FiEdit2 size={12} />
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -877,10 +855,11 @@ export function AgentSidebar({
                                       fontSize: "0.75rem",
                                       padding: "2px 4px",
                                       borderRadius: 4,
+                                      color: "#ef4444",
                                     }}
                                     title="Excluir"
                                   >
-                                    🗑️
+                                    <FiTrash2 size={12} />
                                   </button>
                                 </div>
                               </div>
@@ -963,7 +942,7 @@ export function AgentSidebar({
                           flexShrink: 0,
                         }}
                       >
-                        {agent.icon}
+                        <AgentIcon icon={agent.icon} size={18} />
                       </div>
                       <div style={{ overflow: "hidden" }}>
                         <div

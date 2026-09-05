@@ -46,7 +46,7 @@ export const workflowEngineFlow = ai.defineFlow(
     };
 
     notify({
-      log: { message: '🚀 Iniciando execução do Workflow...', type: 'system' },
+      log: { message: 'Iniciando execução do Workflow...', type: 'system' },
       status: 'running',
     });
 
@@ -334,7 +334,7 @@ Responda APENAS "SIM" ou "NÃO".`,
         notify({
           nodeId: activeNode.id,
           status: 'done',
-          log: { message: '🏁 Workflow finalizado com sucesso!', type: 'system' },
+          log: { message: 'Workflow finalizado com sucesso!', type: 'system' },
         });
         break;
       }

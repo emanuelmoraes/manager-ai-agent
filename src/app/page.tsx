@@ -1,38 +1,49 @@
 import Link from "next/link";
+import {
+  FiCpu,
+  FiZap,
+  FiLink,
+  FiShield,
+  FiBarChart2,
+  FiRefreshCw,
+  FiTerminal,
+  FiSettings,
+  FiLayers,
+} from "react-icons/fi";
 
 const features = [
   {
-    icon: "🧠",
+    icon: <FiCpu size={24} />,
     title: "Orquestração Inteligente",
     description:
       "Coordena múltiplos agentes de IA em pipelines sequenciais e paralelos, garantindo execução eficiente de tarefas complexas.",
   },
   {
-    icon: "⚡",
+    icon: <FiZap size={24} />,
     title: "Execução em Tempo Real",
     description:
       "Monitore o status de cada agente ao vivo, com feedback imediato e rastreamento completo do fluxo de trabalho.",
   },
   {
-    icon: "🔗",
+    icon: <FiLink size={24} />,
     title: "Integração com Genkit",
     description:
       "Powered by Google Genkit e Gemini Pro, garantindo respostas precisas e capacidade de raciocínio avançado.",
   },
   {
-    icon: "🛡️",
+    icon: <FiShield size={24} />,
     title: "Controle & Governança",
     description:
       "Defina políticas, limites de execução e pontos de revisão humana para manter o controle total dos processos automatizados.",
   },
   {
-    icon: "📊",
+    icon: <FiBarChart2 size={24} />,
     title: "Analytics de Agentes",
     description:
       "Visualize métricas de desempenho, histórico de execuções e insights sobre o comportamento de cada agente.",
   },
   {
-    icon: "🔄",
+    icon: <FiRefreshCw size={24} />,
     title: "Workflows Adaptativos",
     description:
       "Agentes que aprendem com o contexto e se adaptam dinamicamente às necessidades do projeto em curso.",
@@ -105,14 +116,14 @@ export default function Home() {
             style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.1)" }}
           />
           <div className="status-item">
-            <span>🤖</span>
+            <FiTerminal size={14} className="text-violet-400" />
             <span>Genkit v1.37</span>
           </div>
           <div
             style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.1)" }}
           />
           <div className="status-item">
-            <span>⚙️</span>
+            <FiSettings size={14} className="text-violet-400" />
             <span>Next.js 16</span>
           </div>
         </div>
@@ -133,7 +144,7 @@ export default function Home() {
 
         {/* Floating agent nodes */}
         <div
-          className="agent-node hidden lg:flex"
+          className="agent-node hidden lg:flex items-center justify-center"
           style={{
             width: 56,
             height: 56,
@@ -143,24 +154,23 @@ export default function Home() {
           }}
           aria-hidden="true"
         >
-          🤖
+          <FiCpu size={26} className="text-violet-300" />
         </div>
         <div
-          className="agent-node hidden lg:flex"
+          className="agent-node hidden lg:flex items-center justify-center"
           style={{
             width: 44,
             height: 44,
             top: "30%",
             left: "14%",
             animationDelay: "1.5s",
-            fontSize: 16,
           }}
           aria-hidden="true"
         >
-          ⚡
+          <FiZap size={20} className="text-cyan-300" />
         </div>
         <div
-          className="agent-node hidden lg:flex"
+          className="agent-node hidden lg:flex items-center justify-center"
           style={{
             width: 52,
             height: 52,
@@ -170,10 +180,10 @@ export default function Home() {
           }}
           aria-hidden="true"
         >
-          🧠
+          <FiLayers size={24} className="text-indigo-300" />
         </div>
         <div
-          className="agent-node hidden lg:flex"
+          className="agent-node hidden lg:flex items-center justify-center"
           style={{
             width: 56,
             height: 56,
@@ -183,24 +193,23 @@ export default function Home() {
           }}
           aria-hidden="true"
         >
-          📊
+          <FiBarChart2 size={26} className="text-amber-300" />
         </div>
         <div
-          className="agent-node hidden lg:flex"
+          className="agent-node hidden lg:flex items-center justify-center"
           style={{
             width: 44,
             height: 44,
             top: "40%",
             right: "12%",
             animationDelay: "2s",
-            fontSize: 16,
           }}
           aria-hidden="true"
         >
-          🔗
+          <FiLink size={20} className="text-emerald-300" />
         </div>
         <div
-          className="agent-node hidden lg:flex"
+          className="agent-node hidden lg:flex items-center justify-center"
           style={{
             width: 50,
             height: 50,
@@ -210,7 +219,7 @@ export default function Home() {
           }}
           aria-hidden="true"
         >
-          🛡️
+          <FiShield size={24} className="text-rose-300" />
         </div>
 
         {/* Content */}
@@ -375,7 +384,7 @@ export default function Home() {
           {/* Section header */}
           <div className="flex flex-col items-center text-center mb-16 gap-4">
             <div className="badge">
-              <span>🔧</span>
+              <FiLayers size={14} />
               Capacidades
             </div>
             <h2

@@ -1,5 +1,8 @@
 import React from "react";
 import { AiProviderId } from "@/app/workspace/types";
+import { SiGoogle, SiAnthropic, SiDeepseek, SiX } from "react-icons/si";
+import { TbBrandOpenai } from "react-icons/tb";
+import { FiExternalLink } from "react-icons/fi";
 
 interface Provider {
   id: AiProviderId;
@@ -22,7 +25,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "google",
     name: "Google Gemini",
-    icon: "✨",
+    icon: <SiGoogle size={20} />,
     color: "#a78bfa",
     description: "Modelos Gemini Pro & Flash",
     link: "https://aistudio.google.com/app/apikey",
@@ -30,7 +33,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "openai",
     name: "OpenAI",
-    icon: "🧠",
+    icon: <TbBrandOpenai size={22} />,
     color: "#f8fafc",
     description: "Modelos GPT-4 & GPT-3.5",
     link: "https://platform.openai.com/api-keys",
@@ -38,7 +41,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "anthropic",
     name: "Anthropic",
-    icon: "🧬",
+    icon: <SiAnthropic size={20} />,
     color: "#cc9b7a",
     description: "Família Claude 3",
     link: "https://console.anthropic.com/settings/keys",
@@ -46,7 +49,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "deepseek",
     name: "DeepSeek",
-    icon: "🐋",
+    icon: <SiDeepseek size={20} />,
     color: "#3b82f6",
     description: "Modelos DeepSeek-V3 & R1",
     link: "https://platform.deepseek.com/api_keys",
@@ -54,7 +57,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "grok",
     name: "Grok (xAI)",
-    icon: "⚡",
+    icon: <SiX size={18} />,
     color: "#f59e0b",
     description: "Modelos Grok-2 & Vision",
     link: "https://console.x.ai/",
@@ -132,8 +135,14 @@ export function IAProvidersTab({
                     />
                   </div>
                   <div className="text-right mt-1">
-                    <a href={provider.link} target="_blank" rel="noreferrer" className="text-[11px] md:text-xs text-violet-400 no-underline hover:text-violet-300 transition-colors">
-                      Obter chave no {provider.name.split(" ")[0]} ↗
+                    <a
+                      href={provider.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] md:text-xs text-violet-400 no-underline hover:text-violet-300 transition-colors inline-flex items-center gap-1"
+                    >
+                      <span>Obter chave no {provider.name.split(" ")[0]}</span>
+                      <FiExternalLink size={12} />
                     </a>
                   </div>
                 </div>

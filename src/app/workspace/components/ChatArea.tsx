@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Agent, ChatSession, ChatMessage } from "../types";
 import { ChatInput } from "./ChatInput";
+import { FiMessageSquare } from "react-icons/fi";
 
 interface ChatAreaProps {
   openSessionIds: string[];
@@ -132,7 +133,9 @@ export function ChatArea({
                 gap: 8,
               }}
             >
-              <div style={{ fontSize: 32 }}>💬</div>
+              <div style={{ color: "#64748b", marginBottom: 4 }}>
+                <FiMessageSquare size={32} />
+              </div>
               <p style={{ fontSize: "0.85rem", color: "#94a3b8", textAlign: "center" }}>
                 Send a message to start the conversation with {ag?.name}.
               </p>

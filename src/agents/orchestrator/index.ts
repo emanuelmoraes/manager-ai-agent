@@ -228,7 +228,7 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
         notify({ agentId: agent.id, log: { message: `Etapa concluída por ${agent.name}.`, type: 'success' } });
         notify({ agentId: agent.id, status: 'done' });
 
-        contextData += `\n\n### 🤖 Contribuição do Agente: ${agent.name} (${agent.role})\n${agentOutput}\n`;
+        contextData += `\n\n### Contribuição do Agente: ${agent.name} (${agent.role})\n${agentOutput}\n`;
       }
 
       return { finalOutput: contextData };

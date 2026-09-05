@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { getAgentsFromFirebase, syncAgentsToFirebase } from "@/lib/firebase/sync";
 import { Agent, AiProviderId } from "../../types";
 import { ProviderConfig } from "../components/ProviderConfig";
+import { AgentIcon, AGENT_ICONS } from "../../components/AgentIcon";
 
 export default function AgentConfigPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function AgentConfigPage() {
   // Form states
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
-  const [icon, setIcon] = useState("🤖");
+  const [icon, setIcon] = useState("bot");
   const [color, setColor] = useState("#a78bfa");
   const [description, setDescription] = useState("");
   const [provider, setProvider] = useState<AiProviderId>("google");
@@ -183,14 +184,19 @@ export default function AgentConfigPage() {
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Icon</label>
                   <div className="flex gap-2 flex-wrap">
-                    {["🤖", "💻", "🎨", "🚀", "📊", "🔍", "✍️", "🛡️", "🔑"].map((emoji) => (
+                    {AGENT_ICONS.map((item) => (
                       <button
-                        key={emoji}
+                        key={item.id}
                         type="button"
-                        onClick={() => setIcon(emoji)}
-                        className={`text-xl p-2 rounded-lg cursor-pointer transition-colors ${icon === emoji ? 'bg-violet-500/20 border-violet-500 border' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}
+                        onClick={() => setIcon(item.id)}
+                        title={item.label}
+                        className={`p-2.5 rounded-lg cursor-pointer transition-colors flex items-center justify-center ${
+                          icon === item.id
+                            ? "bg-violet-500/20 border-violet-500 border text-violet-300"
+                            : "bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300"
+                        }`}
                       >
-                        {emoji}
+                        <AgentIcon icon={item.id} size={20} />
                       </button>
                     ))}
                   </div>

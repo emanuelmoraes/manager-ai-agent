@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { WorkflowDefinition } from '@/types/workflow';
+import { FiZap, FiTrash2 } from 'react-icons/fi';
 
 export default function WorkflowsListPage() {
   const router = useRouter();
@@ -79,8 +80,8 @@ export default function WorkflowsListPage() {
           <div className="text-slate-400 text-center py-12">Carregando workflows...</div>
         ) : workflows.length === 0 ? (
           <div className="bg-white/5 border border-dashed border-white/10 rounded-2xl p-8 md:p-12 text-center flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 text-3xl">
-              ⚡
+            <div className="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+              <FiZap size={28} />
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-50 m-0">Nenhum Workflow Encontrado</h3>
@@ -110,9 +111,10 @@ export default function WorkflowsListPage() {
                     </h3>
                     <button
                       onClick={(e) => handleDelete(wf.id, e)}
+                      title="Excluir Workflow"
                       className="text-slate-500 hover:text-rose-400 transition-colors bg-transparent border-none cursor-pointer p-1"
                     >
-                      🗑️
+                      <FiTrash2 size={16} />
                     </button>
                   </div>
                   <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">

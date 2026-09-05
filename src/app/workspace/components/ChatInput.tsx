@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { FiSmile } from "react-icons/fi";
 
 interface ChatInputProps {
   chatInput: string;
@@ -113,6 +114,7 @@ export function ChatInput({
           <button
             onClick={() => !chatLoading && setShowEmojiPicker(!showEmojiPicker)}
             disabled={chatLoading}
+            title="Inserir Emoji"
             style={{
               background: "transparent",
               border: "none",
@@ -127,12 +129,7 @@ export function ChatInput({
             onMouseEnter={(e) => !chatLoading && (e.currentTarget.style.color = "#f8fafc")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-              <line x1="9" y1="9" x2="9.01" y2="9"></line>
-              <line x1="15" y1="9" x2="15.01" y2="9"></line>
-            </svg>
+            <FiSmile size={20} />
           </button>
 
           {showEmojiPicker && (

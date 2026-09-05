@@ -16,6 +16,7 @@ import { Agent, ChatSession, ChatMessage, AiProviderId } from "./types";
 import { TopBar } from "./components/TopBar";
 import { AgentSidebar } from "./components/AgentSidebar";
 import { ChatArea } from "./components/ChatArea";
+import { AgentIcon } from "./components/AgentIcon";
 import { useRouter } from "next/navigation";
 
 export default function WorkspacePage() {
@@ -445,7 +446,7 @@ export default function WorkspacePage() {
                         flexShrink: 0,
                       }}
                     >
-                      {ag?.icon || "🤖"}
+                      <AgentIcon icon={ag?.icon} size={12} />
                     </span>
 
                     {/* Agent Name + Session Title */}

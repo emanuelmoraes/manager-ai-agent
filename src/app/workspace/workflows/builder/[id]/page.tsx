@@ -26,6 +26,19 @@ import {
   EndNode,
 } from '../../components/CustomNodes';
 import { WorkflowDefinition, WorkflowNode, WorkflowEdge } from '@/types/workflow';
+import {
+  FiPlay,
+  FiSave,
+  FiCpu,
+  FiZap,
+  FiShare2,
+  FiHelpCircle,
+  FiCheckCircle,
+  FiInfo,
+  FiX,
+  FiTrash2,
+  FiLoader,
+} from 'react-icons/fi';
 
 interface AgentItem {
   id: string;
@@ -300,14 +313,14 @@ export default function VisualWorkflowBuilderPage() {
             onClick={() => setShowRunDrawer(true)}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs md:text-sm shadow-md transition-all cursor-pointer border-none"
           >
-            ▶ Executar Workflow
+            <FiPlay size={14} /> Executar Workflow
           </button>
           <button
             onClick={handleSaveWorkflow}
             disabled={saving}
             className="flex items-center gap-2 px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg font-bold text-xs md:text-sm shadow-md transition-all cursor-pointer border-none disabled:opacity-50"
           >
-            {saving ? 'Salvando...' : '💾 Salvar Workflow'}
+            {saving ? 'Salvando...' : <><FiSave size={14} /> Salvar Workflow</>}
           </button>
         </div>
       </header>
@@ -325,36 +338,37 @@ export default function VisualWorkflowBuilderPage() {
               onClick={() => addNode('agent', 'Novo Agente')}
               className="flex items-center gap-3 p-3 bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/20 rounded-xl text-violet-300 text-xs font-bold text-left cursor-pointer transition-colors"
             >
-              🤖 Nó de Agente
+              <FiCpu size={16} /> Nó de Agente
             </button>
             <button
               onClick={() => addNode('parallel', 'Divisor Paralelo')}
               className="flex items-center gap-3 p-3 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 rounded-xl text-cyan-300 text-xs font-bold text-left cursor-pointer transition-colors"
             >
-              ⚡ Divisor Paralelo
+              <FiZap size={16} /> Divisor Paralelo
             </button>
             <button
               onClick={() => addNode('synthesizer', 'Agregador / Sintetizador')}
               className="flex items-center gap-3 p-3 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 rounded-xl text-indigo-300 text-xs font-bold text-left cursor-pointer transition-colors"
             >
-              🧠 Nó Agregador (Sintetizador IA)
+              <FiShare2 size={16} /> Nó Agregador (Sintetizador IA)
             </button>
             <button
               onClick={() => addNode('condition', 'Condição Decisória')}
               className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 rounded-xl text-amber-300 text-xs font-bold text-left cursor-pointer transition-colors"
             >
-              ❓ Nó Condicional
+              <FiHelpCircle size={16} /> Nó Condicional
             </button>
             <button
               onClick={() => addNode('end', 'Fim do Fluxo')}
               className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 rounded-xl text-blue-300 text-xs font-bold text-left cursor-pointer transition-colors"
             >
-              🏁 Nó de Fim
+              <FiCheckCircle size={16} /> Nó de Fim
             </button>
           </div>
 
-          <div className="mt-auto pt-4 border-t border-white/5 text-[11px] text-slate-500 leading-relaxed">
-            💡 <b>Dica:</b> Arraste as conexões entre as bolinhas dos nós para definir a sequência de execução.
+          <div className="mt-auto pt-4 border-t border-white/5 text-[11px] text-slate-500 leading-relaxed flex items-start gap-2">
+            <FiInfo size={16} className="shrink-0 text-violet-400 mt-0.5" />
+            <span><b>Dica:</b> Arraste as conexões entre as bolinhas dos nós para definir a sequência de execução.</span>
           </div>
         </aside>
 
@@ -383,9 +397,10 @@ export default function VisualWorkflowBuilderPage() {
               <h3 className="text-sm font-bold text-slate-200 m-0">Propriedades do Nó</h3>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="text-slate-400 hover:text-slate-200 bg-transparent border-none cursor-pointer"
+                className="text-slate-400 hover:text-slate-200 bg-transparent border-none cursor-pointer p-1"
+                title="Fechar"
               >
-                ✕
+                <FiX size={16} />
               </button>
             </div>
 
@@ -445,9 +460,9 @@ export default function VisualWorkflowBuilderPage() {
 
               <button
                 onClick={deleteSelectedNode}
-                className="mt-4 px-4 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+                className="mt-4 px-4 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-xl font-bold text-xs cursor-pointer transition-colors flex items-center justify-center gap-2"
               >
-                🗑️ Excluir Nó
+                <FiTrash2 size={14} /> Excluir Nó
               </button>
             </div>
           </aside>
@@ -465,9 +480,10 @@ export default function VisualWorkflowBuilderPage() {
               </div>
               <button
                 onClick={() => setShowRunDrawer(false)}
-                className="text-slate-400 hover:text-slate-200 bg-transparent border-none cursor-pointer text-lg"
+                className="text-slate-400 hover:text-slate-200 bg-transparent border-none cursor-pointer p-1"
+                title="Fechar"
               >
-                ✕
+                <FiX size={18} />
               </button>
             </div>
 
@@ -484,7 +500,15 @@ export default function VisualWorkflowBuilderPage() {
                 disabled={isExecuting}
                 className="py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl cursor-pointer transition-colors border-none disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isExecuting ? '⚡ Processando Workflow...' : '▶ Iniciar Execução'}
+                {isExecuting ? (
+                  <>
+                    <FiLoader size={16} className="animate-spin" /> Processando Workflow...
+                  </>
+                ) : (
+                  <>
+                    <FiPlay size={14} /> Iniciar Execução
+                  </>
+                )}
               </button>
             </div>
 
