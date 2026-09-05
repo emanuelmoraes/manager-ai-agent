@@ -12,6 +12,7 @@
     "@genkit-ai/google-genai": "^1.37.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/pdfjs-dist": "^2.10.377",
+    "@types/swagger-ui-dist": "^3.30.6",
     "@xyflow/react": "^12.11.2",
     "firebase": "^12.15.0",
     "firebase-admin": "^14.1.0",
@@ -26,7 +27,8 @@
     "react-icons": "^5.7.0",
     "react-markdown": "^10.1.0",
     "react-toastify": "^11.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "swagger-ui-dist": "^5.32.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

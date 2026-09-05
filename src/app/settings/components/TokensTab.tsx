@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Key, Plus, RefreshCw, Shield, ShieldAlert, Bot, Calendar, Clock, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { Key, Plus, RefreshCw, Shield, ShieldAlert, Bot, Calendar, Clock, AlertTriangle, FileText, ExternalLink } from "lucide-react";
 import { CreateTokenModal } from "./CreateTokenModal";
 import type { ApiTokenRecord } from "@/types/token";
 import type { Timestamp } from "firebase/firestore";
@@ -93,6 +94,17 @@ export function TokensTab({
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Link
+            href="/api-docs"
+            target="_blank"
+            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-sm font-medium rounded-lg border border-indigo-500/25 transition-colors cursor-pointer"
+            title="Abrir documentação interativa Swagger / OpenAPI"
+          >
+            <FileText className="w-4 h-4 text-indigo-400" />
+            <span>Documentação Swagger</span>
+            <ExternalLink className="w-3 h-3 text-indigo-400/70" />
+          </Link>
+
           <button
             onClick={onRefreshTokens}
             disabled={loadingTokens}
@@ -114,11 +126,21 @@ export function TokensTab({
       </div>
 
       {/* Info Notice */}
-      <div className="mb-6 p-4 bg-violet-500/5 border border-violet-500/15 rounded-xl flex items-start gap-3">
-        <Shield className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-slate-300 leading-relaxed">
-          <span className="font-semibold text-violet-300">Como funciona a autorização:</span> Cada token gerado concede autorização para interagir via <code className="bg-white/10 px-1.5 py-0.5 rounded text-violet-200">POST /api/v1/chat</code> com o Agente configurado. Os tokens são permanentes (sem expiração temporal) e podem ser revogados individualmente a qualquer momento.
+      <div className="mb-6 p-4 bg-violet-500/5 border border-violet-500/15 rounded-xl flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
+        <div className="flex items-start gap-3">
+          <Shield className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
+          <div className="text-xs text-slate-300 leading-relaxed">
+            <span className="font-semibold text-violet-300">Como funciona a autorização:</span> Cada token gerado concede autorização para interagir via <code className="bg-white/10 px-1.5 py-0.5 rounded text-violet-200">POST /api/v1/chat</code> com o Agente configurado. Os tokens são permanentes (sem expiração temporal) e podem ser revogados individualmente a qualquer momento.
+          </div>
         </div>
+        <Link
+          href="/api-docs"
+          target="_blank"
+          className="shrink-0 text-xs font-medium text-violet-300 hover:text-violet-200 underline underline-offset-4 flex items-center gap-1 self-center"
+        >
+          Testar no Swagger UI
+          <ExternalLink className="w-3 h-3" />
+        </Link>
       </div>
 
       {/* Tokens Table */}
