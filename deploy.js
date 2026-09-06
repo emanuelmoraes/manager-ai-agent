@@ -98,12 +98,25 @@ console.log(`\n🚀 Passo 2: Publicando o serviço ${SERVICE_NAME} no Cloud Run.
 
 let deployCommand = `gcloud run deploy ${SERVICE_NAME} --image ${imageTag} --platform managed --region ${REGION} --allow-unauthenticated --port 8080`;
 
-// Garantir injeção da variável de ambiente GEMINI_API_KEY no contêiner do Cloud Run
+// Garantir injeção das variáveis de ambiente no contêiner do Cloud Run
+const envUpdates = [];
+
 if (envVars['GEMINI_API_KEY']) {
   console.log('🔑 Injetando variável de ambiente GEMINI_API_KEY no Cloud Run...');
-  deployCommand += ` --update-env-vars="GEMINI_API_KEY=${envVars['GEMINI_API_KEY']}"`;
+  envUpdates.push(`GEMINI_API_KEY=${envVars['GEMINI_API_KEY']}`);
 } else {
   console.warn('⚠️  AVISO CRÍTICO: GEMINI_API_KEY não foi encontrada em .env.local. As rotas que utilizam o Gemini Genkit poderão falhar no Cloud Run.');
+}
+
+if (envVars['JWT_SECRET']) {
+  console.log('🔑 Injetando variável de ambiente JWT_SECRET no Cloud Run...');
+  envUpdates.push(`JWT_SECRET=${envVars['JWT_SECRET']}`);
+} else {
+  console.warn('⚠️  AVISO CRÍTICO: JWT_SECRET não foi encontrada em .env.local. A validação de tokens da API poderá falhar no Cloud Run.');
+}
+
+if (envUpdates.length > 0) {
+  deployCommand += ` --update-env-vars="${envUpdates.join(',')}"`;
 }
 
 try {

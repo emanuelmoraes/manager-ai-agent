@@ -77,16 +77,16 @@ export async function createApiToken(
     revokedAt: null,
   };
 
-  // Salva no Firestore
-  const docRef = doc(collection(db, COLLECTION_NAME), jti);
-  await setDoc(docRef, record);
-
-  // Assina o JWT perpétuo
+  // Assina o JWT perpétuo primeiro (falha imediatamente se JWT_SECRET não estiver configurado)
   const token = await signApiToken({
     jti,
     agentId: record.agentId,
     sessionId: record.initialSessionId,
   });
+
+  // Salva no Firestore após a assinatura válida
+  const docRef = doc(collection(db, COLLECTION_NAME), jti);
+  await setDoc(docRef, record);
 
   return { token, record };
 }

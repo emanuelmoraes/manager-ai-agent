@@ -11,6 +11,7 @@ import { createAgentMemoryTools, searchAgentMemories } from '@/lib/memory/store'
 import { handleCorsPreflight, jsonResponseWithCors } from '@/lib/api/cors';
 import { z } from 'genkit';
 import type { Agent } from '@/app/workspace/types';
+import type { ApiTokenPayload } from '@/types/token';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ const consultarBaseConhecimentoTool = ai.defineTool(
       return results
         .map((item) => `[Documento: ${item.title} (Relevância: ${(item.score * 100).toFixed(1)}%)]\n${item.content}`)
         .join('\n\n---\n\n');
-    } catch (error: any) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('Erro ao consultar base de conhecimento:', error);
       return `Erro ao consultar a base de conhecimento: ${message}`;
@@ -90,7 +91,21 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Validação criptográfica do JWT (jose)
-    const tokenPayload = await verifyApiToken(token);
+    let tokenPayload: ApiTokenPayload | null = null;
+    try {
+      tokenPayload = await verifyApiToken(token);
+    } catch (configError: unknown) {
+      const message =
+        configError instanceof Error
+          ? configError.message
+          : 'Falha na configuração de segurança do servidor.';
+      console.error('[api/v1/chat] Erro de configuração no servidor:', message);
+      return jsonResponseWithCors(
+        { error: `Erro de configuração no servidor: ${message}` },
+        { status: 500 }
+      );
+    }
+
     if (!tokenPayload) {
       return jsonResponseWithCors(
         { error: 'Token de acesso inválido, corrompido ou assinatura divergente.' },
@@ -217,7 +232,7 @@ export async function POST(req: NextRequest) {
 
       const { salvarMemoriaTool, consultarMemoriasTool } = createAgentMemoryTools(tokenPayload.agentId);
       agentMemoryTools = [salvarMemoriaTool, consultarMemoriasTool];
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('[api/v1/chat] Aviso ao carregar memórias do agente:', err);
     }
 
@@ -415,7 +430,7 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro interno no servidor.';
     console.error('[api/v1/chat] Erro ao processar requisição externa:', error);
     return jsonResponseWithCors(
