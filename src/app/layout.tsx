@@ -14,6 +14,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { CredentialGuardProvider } from "@/components/auth/CredentialGuardProvider";
+
 export const metadata: Metadata = {
   title: "Manager AI Agent — Orquestrador de Agentes Inteligentes",
   description:
@@ -31,7 +33,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <CredentialGuardProvider>
+          {children}
+        </CredentialGuardProvider>
         <ToastContainer theme="dark" position="top-right" />
       </body>
     </html>

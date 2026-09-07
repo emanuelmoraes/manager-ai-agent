@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Key, Copy, Check, X, ShieldCheck, AlertCircle, Bot, RefreshCw, Terminal } from "lucide-react";
 import type { ApiTokenRecord } from "@/types/token";
 import { createTokenAction } from "../actions";
+import { useCredentialGuard } from "@/components/auth/CredentialGuardProvider";
 
 interface AgentOption {
   id: string;
@@ -26,6 +27,7 @@ export function CreateTokenModal({
   agents,
   onTokenCreated,
 }: CreateTokenModalProps) {
+  const { guardAction } = useCredentialGuard();
   const [name, setName] = useState("");
   const [agentId, setAgentId] = useState(agents[0]?.id || "");
   const [submitting, setSubmitting] = useState(false);
@@ -39,20 +41,28 @@ export function CreateTokenModal({
     e.preventDefault();
     if (!name.trim() || !agentId.trim()) return;
 
-    setSubmitting(true);
-    setError(null);
+    guardAction(
+      async () => {
+        setSubmitting(true);
+        setError(null);
 
-    try {
-      const data = await createTokenAction(name.trim(), agentId.trim());
-      setGeneratedToken(data.token);
-      onTokenCreated({ token: data.token, record: data.record });
-    } catch (err: unknown) {
-      console.error(err);
-      const message = err instanceof Error ? err.message : "Erro ao gerar o token de API.";
-      setError(message);
-    } finally {
-      setSubmitting(false);
-    }
+        try {
+          const data = await createTokenAction(name.trim(), agentId.trim());
+          setGeneratedToken(data.token);
+          onTokenCreated({ token: data.token, record: data.record });
+        } catch (err: unknown) {
+          console.error(err);
+          const message = err instanceof Error ? err.message : "Erro ao gerar o token de API.";
+          setError(message);
+        } finally {
+          setSubmitting(false);
+        }
+      },
+      {
+        title: "Gerar Novo Token de API",
+        description: "A emissão de tokens concede acesso persistente aos agentes através de APIs externas.",
+      }
+    );
   };
 
   const handleCopy = () => {

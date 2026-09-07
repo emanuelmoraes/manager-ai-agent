@@ -12,6 +12,7 @@ import { getAgentsFromFirebase } from "@/lib/firebase/sync";
 import type { ApiTokenRecord } from "@/types/token";
 import { AiProviderId, Agent } from "@/app/workspace/types";
 import { fetchTokensAction, revokeTokenAction } from "./actions";
+import { useCredentialGuard } from "@/components/auth/CredentialGuardProvider";
 
 interface KnowledgeDoc {
   id: string;
@@ -34,6 +35,7 @@ type SettingsTab = "keys" | "knowledge" | "mcp" | "tokens";
 
 export default function SettingsPage() {
   const { notifySuccess, notifyError, notifyWarning } = useToast();
+  const { guardAction } = useCredentialGuard();
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<SettingsTab>("keys");
@@ -169,54 +171,70 @@ export default function SettingsPage() {
   };
 
   const handleDeleteDoc = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja remover este documento da base de conhecimento?")) return;
+    guardAction(
+      async () => {
+        if (!window.confirm("Tem certeza que deseja remover este documento da base de conhecimento?")) return;
 
-    try {
-      const res = await fetch(`/api/settings/knowledge/${id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
+        try {
+          const res = await fetch(`/api/settings/knowledge/${id}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
 
-      if (data.success) {
-        setDocs((prev) => prev.filter((d) => d.id !== id));
-        notifySuccess("Documento excluído com sucesso da base.");
-      } else {
-        notifyError(data.error || "Erro ao excluir documento.");
+          if (data.success) {
+            setDocs((prev) => prev.filter((d) => d.id !== id));
+            notifySuccess("Documento excluído com sucesso da base.");
+          } else {
+            notifyError(data.error || "Erro ao excluir documento.");
+          }
+        } catch (error) {
+          console.error(error);
+          notifyError("Erro ao excluir documento.");
+        }
+      },
+      {
+        title: "Excluir Documento da Base RAG",
+        description: "Esta ação removerá permanentemente o documento e seus embeddings vetoriais.",
       }
-    } catch (error) {
-      console.error(error);
-      notifyError("Erro ao excluir documento.");
-    }
+    );
   };
 
   // --- API Keys Functions ---
   const handleSaveKeys = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/settings/keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(keys),
-      });
+    guardAction(
+      async () => {
+        setSaving(true);
+        try {
+          const res = await fetch("/api/settings/keys", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(keys),
+          });
 
-      if (!res.ok) throw new Error("Falha ao salvar chaves");
+          if (!res.ok) throw new Error("Falha ao salvar chaves");
 
-      setStatus((prev) => ({
-        ...prev,
-        google: keys.google ? true : prev.google,
-        openai: keys.openai ? true : prev.openai,
-        anthropic: keys.anthropic ? true : prev.anthropic,
-        deepseek: keys.deepseek ? true : prev.deepseek,
-        grok: keys.grok ? true : prev.grok,
-      }));
+          setStatus((prev) => ({
+            ...prev,
+            google: keys.google ? true : prev.google,
+            openai: keys.openai ? true : prev.openai,
+            anthropic: keys.anthropic ? true : prev.anthropic,
+            deepseek: keys.deepseek ? true : prev.deepseek,
+            grok: keys.grok ? true : prev.grok,
+          }));
 
-      setKeys({ google: "", openai: "", anthropic: "", deepseek: "", grok: "" });
-      notifySuccess("Chaves de API salvas com sucesso!");
-    } catch (error) {
-      notifyError("Erro ao salvar as chaves.");
-    } finally {
-      setSaving(false);
-    }
+          setKeys({ google: "", openai: "", anthropic: "", deepseek: "", grok: "" });
+          notifySuccess("Chaves de API salvas com sucesso!");
+        } catch (error) {
+          notifyError("Erro ao salvar as chaves.");
+        } finally {
+          setSaving(false);
+        }
+      },
+      {
+        title: "Salvar Chaves de Provedores de IA",
+        description: "A alteração de chaves de API afeta a autenticação central de todos os agentes.",
+      }
+    );
   };
 
   // --- MCP Servers Functions ---
@@ -239,84 +257,100 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!mcpForm.id.trim()) return;
 
-    setSavingMcp(true);
-    try {
-      let parsedEnv = {};
-      if (mcpForm.env.trim()) {
+    guardAction(
+      async () => {
+        setSavingMcp(true);
         try {
-          parsedEnv = JSON.parse(mcpForm.env);
-        } catch (err) {
-          notifyError("Variáveis de Ambiente JSON inválidas.");
-          setSavingMcp(false);
-          return;
-        }
-      }
-
-      // Convert comma-separated string to array for args
-      const argsArray = mcpForm.args ? mcpForm.args.split(",").map(a => a.trim()).filter(a => a) : [];
-
-      const payload = {
-        ...mcpForm,
-        args: argsArray,
-        env: parsedEnv
-      };
-
-      const res = await fetch("/api/settings/mcp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMcpServers((prev) => {
-          const idx = prev.findIndex((s) => s.id === data.data.id);
-          if (idx > -1) {
-            const copy = [...prev];
-            copy[idx] = data.data;
-            return copy;
+          let parsedEnv = {};
+          if (mcpForm.env.trim()) {
+            try {
+              parsedEnv = JSON.parse(mcpForm.env);
+            } catch (err) {
+              notifyError("Variáveis de Ambiente JSON inválidas.");
+              setSavingMcp(false);
+              return;
+            }
           }
-          return [...prev, data.data];
-        });
-        setMcpForm({
-          id: "",
-          name: "",
-          type: "sse",
-          url: "",
-          command: "",
-          args: "",
-          env: "",
-        });
-        setEditingId(null);
-        notifySuccess(editingId ? "Servidor MCP atualizado com sucesso!" : "Servidor MCP cadastrado com sucesso!");
-      } else {
-        notifyError(data.error || "Erro ao salvar servidor MCP.");
+
+          // Convert comma-separated string to array for args
+          const argsArray = mcpForm.args ? mcpForm.args.split(",").map(a => a.trim()).filter(a => a) : [];
+
+          const payload = {
+            ...mcpForm,
+            args: argsArray,
+            env: parsedEnv
+          };
+
+          const res = await fetch("/api/settings/mcp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (data.success) {
+            setMcpServers((prev) => {
+              const idx = prev.findIndex((s) => s.id === data.data.id);
+              if (idx > -1) {
+                const copy = [...prev];
+                copy[idx] = data.data;
+                return copy;
+              }
+              return [...prev, data.data];
+            });
+            setMcpForm({
+              id: "",
+              name: "",
+              type: "sse",
+              url: "",
+              command: "",
+              args: "",
+              env: "",
+            });
+            setEditingId(null);
+            notifySuccess(editingId ? "Servidor MCP atualizado com sucesso!" : "Servidor MCP cadastrado com sucesso!");
+          } else {
+            notifyError(data.error || "Erro ao salvar servidor MCP.");
+          }
+        } catch (error) {
+          console.error(error);
+          notifyError("Erro ao cadastrar servidor MCP.");
+        } finally {
+          setSavingMcp(false);
+        }
+      },
+      {
+        title: editingId ? "Atualizar Servidor MCP" : "Cadastrar Servidor MCP",
+        description: "Servidores MCP permitem execução de processos ou conexões externas de ferramentas.",
       }
-    } catch (error) {
-      console.error(error);
-      notifyError("Erro ao cadastrar servidor MCP.");
-    } finally {
-      setSavingMcp(false);
-    }
+    );
   };
 
   const handleDeleteMcpServer = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este servidor MCP?")) return;
+    guardAction(
+      async () => {
+        if (!window.confirm("Tem certeza que deseja excluir este servidor MCP?")) return;
 
-    try {
-      const res = await fetch(`/api/settings/mcp/${id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMcpServers((prev) => prev.filter((s) => s.id !== id));
-        notifySuccess("Servidor MCP excluído com sucesso!");
-      } else {
-        notifyError(data.error || "Erro ao excluir servidor MCP.");
+        try {
+          const res = await fetch(`/api/settings/mcp/${id}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          if (data.success) {
+            setMcpServers((prev) => prev.filter((s) => s.id !== id));
+            notifySuccess("Servidor MCP excluído com sucesso!");
+          } else {
+            notifyError(data.error || "Erro ao excluir servidor MCP.");
+          }
+        } catch (error) {
+          console.error(error);
+          notifyError("Erro ao excluir servidor.");
+        }
+      },
+      {
+        title: "Excluir Servidor MCP",
+        description: "A exclusão do servidor MCP desativa o acesso dos agentes às ferramentas desse servidor.",
       }
-    } catch (error) {
-      console.error(error);
-      notifyError("Erro ao excluir servidor.");
-    }
+    );
   };
 
   const handleEditMcpServer = (srv: McpServer) => {
@@ -393,18 +427,26 @@ export default function SettingsPage() {
   };
 
   const handleRevokeToken = async (id: string) => {
-    try {
-      await revokeTokenAction(id);
-      notifySuccess("Token revogado com sucesso!");
-      setTokens((prev) =>
-        prev.map((tok) =>
-          tok.id === id ? { ...tok, status: "revoked", revokedAt: Timestamp.now() } : tok
-        )
-      );
-    } catch (err: unknown) {
-      console.error("Erro ao revogar token:", err);
-      notifyError("Erro ao revogar token.");
-    }
+    guardAction(
+      async () => {
+        try {
+          await revokeTokenAction(id);
+          notifySuccess("Token revogado com sucesso!");
+          setTokens((prev) =>
+            prev.map((tok) =>
+              tok.id === id ? { ...tok, status: "revoked", revokedAt: Timestamp.now() } : tok
+            )
+          );
+        } catch (err: unknown) {
+          console.error("Erro ao revogar token:", err);
+          notifyError("Erro ao revogar token.");
+        }
+      },
+      {
+        title: "Revogar Token de API",
+        description: "Esta ação invalidará permanentemente o token para qualquer aplicação externa consumidora.",
+      }
+    );
   };
 
   return (

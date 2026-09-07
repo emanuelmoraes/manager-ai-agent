@@ -18,9 +18,11 @@ import { AgentSidebar } from "./components/AgentSidebar";
 import { ChatArea } from "./components/ChatArea";
 import { AgentIcon } from "./components/AgentIcon";
 import { useRouter } from "next/navigation";
+import { useCredentialGuard } from "@/components/auth/CredentialGuardProvider";
 
 export default function WorkspacePage() {
   const router = useRouter();
+  const { guardAction } = useCredentialGuard();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
@@ -93,7 +95,16 @@ export default function WorkspacePage() {
         if (fAgents.length) setAgents(fAgents as any);
 
         const fSessions = await getSessionsFromFirebase();
-        if (fSessions.length) setChatSessions(fSessions as any);
+        if (fSessions.length) {
+          const webSessions = fSessions.filter(
+            (s: any) => s.source !== "api" && !s.tokenId
+          );
+          setChatSessions(webSessions as any);
+
+          const webSessionIds = new Set(webSessions.map((s: any) => s.id));
+          setOpenSessionIds((prev) => prev.filter((id) => webSessionIds.has(id)));
+          setActiveSessionId((prev) => (prev && webSessionIds.has(prev) ? prev : null));
+        }
 
         const fChats = await getMessagesFromFirebase();
         if (Object.keys(fChats).length) setChatMessages(fChats);
@@ -139,43 +150,69 @@ export default function WorkspacePage() {
 
   // Agent Handlers
   const handleDeleteAgent = (id: string) => {
-    if (window.confirm("Deseja realmente excluir este agente?")) {
-      const updatedAgents = agents.filter((a) => a.id !== id);
-      setAgents(updatedAgents);
-      localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
-      deleteAgentFromFirebase(id);
+    guardAction(
+      () => {
+        if (window.confirm("Deseja realmente excluir este agente?")) {
+          const updatedAgents = agents.filter((a) => a.id !== id);
+          setAgents(updatedAgents);
+          localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
+          deleteAgentFromFirebase(id);
 
-      const agentSessions = chatSessions.filter(s => s.agentId === id);
-      const remainingSessions = chatSessions.filter(s => s.agentId !== id);
-      setChatSessions(remainingSessions);
-      localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(remainingSessions));
-      agentSessions.forEach(s => deleteSessionFromFirebase(s.id));
+          const agentSessions = chatSessions.filter((s) => s.agentId === id);
+          const remainingSessions = chatSessions.filter((s) => s.agentId !== id);
+          setChatSessions(remainingSessions);
+          localStorage.setItem("manager_ai_chat_sessions", JSON.stringify(remainingSessions));
+          agentSessions.forEach((s) => deleteSessionFromFirebase(s.id));
 
-      const updatedChats = { ...chatMessages };
-      const updatedOpenIds = [...openSessionIds];
-      agentSessions.forEach(s => {
-        localStorage.removeItem(`manager_ai_chat_messages_${s.id}`);
-        deleteMessagesFromFirebase(s.id);
-        delete updatedChats[s.id];
-        const openIdx = updatedOpenIds.indexOf(s.id);
-        if (openIdx > -1) updatedOpenIds.splice(openIdx, 1);
-      });
-      setChatMessages(updatedChats);
-      setOpenSessionIds(updatedOpenIds);
+          const updatedChats = { ...chatMessages };
+          const updatedOpenIds = [...openSessionIds];
+          agentSessions.forEach((s) => {
+            localStorage.removeItem(`manager_ai_chat_messages_${s.id}`);
+            deleteMessagesFromFirebase(s.id);
+            delete updatedChats[s.id];
+            const openIdx = updatedOpenIds.indexOf(s.id);
+            if (openIdx > -1) updatedOpenIds.splice(openIdx, 1);
+          });
+          setChatMessages(updatedChats);
+          setOpenSessionIds(updatedOpenIds);
 
-      if (selectedAgent === id) setSelectedAgent(null);
-      if (activeSessionId && agentSessions.find(s => s.id === activeSessionId)) {
-        setActiveSessionId(updatedOpenIds.length > 0 ? updatedOpenIds[updatedOpenIds.length - 1] : null);
+          if (selectedAgent === id) setSelectedAgent(null);
+          if (activeSessionId && agentSessions.find((s) => s.id === activeSessionId)) {
+            setActiveSessionId(
+              updatedOpenIds.length > 0 ? updatedOpenIds[updatedOpenIds.length - 1] : null
+            );
+          }
+        }
+      },
+      {
+        title: "Excluir Agente de IA",
+        description: "Esta ação apagará permanentemente o agente e o histórico de mensagens associado.",
       }
-    }
+    );
   };
 
   const openEditModal = (agent: Agent) => {
-    router.push(`/workspace/agent/${agent.id}`);
+    guardAction(
+      () => {
+        router.push(`/workspace/agent/${agent.id}`);
+      },
+      {
+        title: "Editar Agente de IA",
+        description: "A modificação de diretrizes e ferramentas do agente exige permissão administrativa.",
+      }
+    );
   };
 
   const openCreateModal = () => {
-    router.push("/workspace/agent/new");
+    guardAction(
+      () => {
+        router.push("/workspace/agent/new");
+      },
+      {
+        title: "Criar Novo Agente de IA",
+        description: "A criação de novos agentes de IA exige permissão administrativa.",
+      }
+    );
   };
 
   // Chat Handlers
@@ -185,7 +222,8 @@ export default function WorkspacePage() {
       id: "session_" + Math.random().toString(36).slice(2, 11),
       agentId,
       title: `Conversa #${existingAgentSessions.length + 1}`,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      source: "web",
     };
     const updatedSessions = [...chatSessions, newSession];
     setChatSessions(updatedSessions);

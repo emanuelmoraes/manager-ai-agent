@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { WorkflowDefinition } from '@/types/workflow';
 import { FiZap, FiTrash2 } from 'react-icons/fi';
+import { useCredentialGuard } from '@/components/auth/CredentialGuardProvider';
 
 export default function WorkflowsListPage() {
   const router = useRouter();
+  const { guardAction } = useCredentialGuard();
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,14 +38,22 @@ export default function WorkflowsListPage() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Deseja realmente excluir este workflow?')) return;
+    guardAction(
+      async () => {
+        if (!confirm('Deseja realmente excluir este workflow?')) return;
 
-    try {
-      await fetch(`/api/workflows?id=${id}`, { method: 'DELETE' });
-      setWorkflows((prev) => prev.filter((w) => w.id !== id));
-    } catch (err) {
-      console.error('Erro ao excluir workflow:', err);
-    }
+        try {
+          await fetch(`/api/workflows?id=${id}`, { method: 'DELETE' });
+          setWorkflows((prev) => prev.filter((w) => w.id !== id));
+        } catch (err) {
+          console.error('Erro ao excluir workflow:', err);
+        }
+      },
+      {
+        title: 'Excluir Workflow',
+        description: 'Esta ação removerá permanentemente o fluxo de trabalho automatizado.',
+      }
+    );
   };
 
   return (

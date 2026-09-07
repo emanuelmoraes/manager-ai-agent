@@ -21,6 +21,8 @@ export interface ChatSession {
   agentId: string;
   title: string;
   updatedAt: number;
+  source?: "web" | "api";
+  tokenId?: string;
 }
 
 export interface ChatMessage {

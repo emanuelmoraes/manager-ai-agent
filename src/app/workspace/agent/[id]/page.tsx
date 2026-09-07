@@ -6,10 +6,12 @@ import { getAgentsFromFirebase, syncAgentsToFirebase } from "@/lib/firebase/sync
 import { Agent, AiProviderId } from "../../types";
 import { ProviderConfig } from "../components/ProviderConfig";
 import { AgentIcon, AGENT_ICONS } from "../../components/AgentIcon";
+import { useCredentialGuard } from "@/components/auth/CredentialGuardProvider";
 
 export default function AgentConfigPage() {
   const router = useRouter();
   const params = useParams();
+  const { guardAction } = useCredentialGuard();
   const agentId = params.id as string;
   const isEditing = agentId !== "new";
 
@@ -71,43 +73,51 @@ export default function AgentConfigPage() {
     if (!name.trim()) return setFormError("O nome do agente é obrigatório.");
     if (!role.trim()) return setFormError("A função do agente é obrigatória.");
 
-    let updatedAgents = [...agents];
+    guardAction(
+      () => {
+        let updatedAgents = [...agents];
 
-    if (isEditing && editingAgent) {
-      const updatedAgent: Agent = {
-        ...editingAgent,
-        name: name.trim(),
-        role: role.trim(),
-        icon,
-        color,
-        description: description.trim() || "Sem descrição fornecida.",
-        provider,
-        model,
-        temperature,
-        reasoningEffort,
-        mcpServers,
-      };
-      updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a));
-    } else {
-      const newAgent: Agent = {
-        id: "agent_" + Math.random().toString(36).slice(2, 11),
-        name: name.trim(),
-        role: role.trim(),
-        icon,
-        color,
-        description: description.trim() || "Sem descrição fornecida.",
-        provider,
-        model,
-        temperature,
-        reasoningEffort,
-        mcpServers,
-      };
-      updatedAgents = [...agents, newAgent];
-    }
+        if (isEditing && editingAgent) {
+          const updatedAgent: Agent = {
+            ...editingAgent,
+            name: name.trim(),
+            role: role.trim(),
+            icon,
+            color,
+            description: description.trim() || "Sem descrição fornecida.",
+            provider,
+            model,
+            temperature,
+            reasoningEffort,
+            mcpServers,
+          };
+          updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a));
+        } else {
+          const newAgent: Agent = {
+            id: "agent_" + Math.random().toString(36).slice(2, 11),
+            name: name.trim(),
+            role: role.trim(),
+            icon,
+            color,
+            description: description.trim() || "Sem descrição fornecida.",
+            provider,
+            model,
+            temperature,
+            reasoningEffort,
+            mcpServers,
+          };
+          updatedAgents = [...agents, newAgent];
+        }
 
-    localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
-    syncAgentsToFirebase(updatedAgents);
-    router.push("/workspace");
+        localStorage.setItem("manager_ai_agents", JSON.stringify(updatedAgents));
+        syncAgentsToFirebase(updatedAgents);
+        router.push("/workspace");
+      },
+      {
+        title: isEditing ? "Atualizar Agente de IA" : "Criar Agente de IA",
+        description: "Salvar configurações de IA e instruções do agente requer autorização administrativa.",
+      }
+    );
   };
 
   if (loading) {

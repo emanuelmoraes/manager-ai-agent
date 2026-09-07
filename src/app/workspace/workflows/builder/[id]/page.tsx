@@ -26,6 +26,7 @@ import {
   EndNode,
 } from '../../components/CustomNodes';
 import { WorkflowDefinition, WorkflowNode, WorkflowEdge } from '@/types/workflow';
+import { useCredentialGuard } from '@/components/auth/CredentialGuardProvider';
 import {
   FiPlay,
   FiSave,
@@ -69,6 +70,7 @@ const initialDefaultEdges: Edge[] = [];
 export default function VisualWorkflowBuilderPage() {
   const params = useParams();
   const router = useRouter();
+  const { guardAction } = useCredentialGuard();
   const workflowId = params.id as string;
 
   const [workflowName, setWorkflowName] = useState('Novo Workflow');
@@ -194,34 +196,42 @@ export default function VisualWorkflowBuilderPage() {
 
   // Salvar Workflow
   const handleSaveWorkflow = async () => {
-    setSaving(true);
-    try {
-      const payload: WorkflowDefinition = {
-        id: workflowId,
-        name: workflowName,
-        description: workflowDesc,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        nodes: nodes as any,
-        edges: edges as any,
-      };
+    guardAction(
+      async () => {
+        setSaving(true);
+        try {
+          const payload: WorkflowDefinition = {
+            id: workflowId,
+            name: workflowName,
+            description: workflowDesc,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            nodes: nodes as any,
+            edges: edges as any,
+          };
 
-      const res = await fetch('/api/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Workflow salvo com sucesso!');
-      } else {
-        alert(`Erro ao salvar: ${data.error}`);
+          const res = await fetch('/api/workflows', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert('Workflow salvo com sucesso!');
+          } else {
+            alert(`Erro ao salvar: ${data.error}`);
+          }
+        } catch (e: any) {
+          alert(`Erro ao salvar workflow: ${e.message}`);
+        } finally {
+          setSaving(false);
+        }
+      },
+      {
+        title: 'Salvar Workflow',
+        description: 'A persistência de nós e conexões do fluxo requer autorização de administrador.',
       }
-    } catch (e: any) {
-      alert(`Erro ao salvar workflow: ${e.message}`);
-    } finally {
-      setSaving(false);
-    }
+    );
   };
 
   // Executar Workflow via SSE Stream

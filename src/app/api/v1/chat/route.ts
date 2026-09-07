@@ -193,6 +193,7 @@ export async function POST(req: NextRequest) {
         id: targetSessionId,
         agentId: tokenPayload.agentId,
         tokenId: tokenPayload.jti,
+        source: 'api',
         title: `Conversa API #${targetSessionId.slice(-6)}`,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
