@@ -192,27 +192,11 @@ export default function WorkspacePage() {
   };
 
   const openEditModal = (agent: Agent) => {
-    guardAction(
-      () => {
-        router.push(`/workspace/agent/${agent.id}`);
-      },
-      {
-        title: "Editar Agente de IA",
-        description: "A modificação de diretrizes e ferramentas do agente exige permissão administrativa.",
-      }
-    );
+    router.push(`/workspace/agent/${agent.id}`);
   };
 
   const openCreateModal = () => {
-    guardAction(
-      () => {
-        router.push("/workspace/agent/new");
-      },
-      {
-        title: "Criar Novo Agente de IA",
-        description: "A criação de novos agentes de IA exige permissão administrativa.",
-      }
-    );
+    router.push("/workspace/agent/new");
   };
 
   // Chat Handlers
