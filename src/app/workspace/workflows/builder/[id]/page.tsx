@@ -27,6 +27,7 @@ import {
 } from '../../components/CustomNodes';
 import { WorkflowDefinition, WorkflowNode, WorkflowEdge } from '@/types/workflow';
 import { useCredentialGuard } from '@/components/auth/CredentialGuardProvider';
+import { getAgentsFromFirebase } from '@/lib/firebase/sync';
 import {
   FiPlay,
   FiSave,
@@ -103,21 +104,25 @@ export default function VisualWorkflowBuilderPage() {
 
   // Carregar agentes cadastrados no workspace
   useEffect(() => {
-    fetch('/api/settings/mcp')
-      .catch(() => {});
-    
-    // Carregar agentes do Firestore via endpoint ou localStorage/State
-    fetch('/api/chat')
-      .then((res) => res.json())
-      .catch(() => {});
-
-    // Ler agentes direto das APIs
-    const loadedAgents = localStorage.getItem('local_agents');
-    if (loadedAgents) {
+    const savedLocal = localStorage.getItem('manager_ai_agents');
+    if (savedLocal) {
       try {
-        setAgents(JSON.parse(loadedAgents));
-      } catch (e) {}
+        setAgents(JSON.parse(savedLocal));
+      } catch (e) {
+        console.error('Erro ao ler manager_ai_agents do localStorage:', e);
+      }
     }
+
+    getAgentsFromFirebase()
+      .then((fAgents) => {
+        if (fAgents && Array.isArray(fAgents) && fAgents.length > 0) {
+          setAgents(fAgents as AgentItem[]);
+          localStorage.setItem('manager_ai_agents', JSON.stringify(fAgents));
+        }
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar agentes do Firestore no builder:', err);
+      });
   }, []);
 
   // Carregar Workflow existente se houver
