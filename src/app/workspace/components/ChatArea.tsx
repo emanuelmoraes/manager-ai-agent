@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Agent, ChatSession, ChatMessage } from "../types";
 import { ChatInput } from "./ChatInput";
+import { AgentIcon } from "./AgentIcon";
 import { FiMessageSquare } from "react-icons/fi";
 
 interface ChatAreaProps {
@@ -169,7 +170,7 @@ export function ChatArea({
                         flexShrink: 0,
                       }}
                     >
-                      {ag.icon}
+                      <AgentIcon icon={ag.icon} size={20} />
                     </div>
                   )}
 
@@ -237,7 +238,7 @@ export function ChatArea({
                     flexShrink: 0,
                   }}
                 >
-                  {ag.icon}
+                  <AgentIcon icon={ag.icon} size={20} />
                 </div>
               )}
               <div
