@@ -11,6 +11,7 @@ export interface Agent {
   description: string;
   provider: AiProviderId;
   model: string;
+  knowledgeBaseId?: string;
   mcpServers?: string[];
   temperature?: number;
   reasoningEffort?: "low" | "medium" | "high";

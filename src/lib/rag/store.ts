@@ -1,46 +1,159 @@
 import { ai } from '../genkit';
 import { adminDb } from '../firebase/admin';
 import { ensureGeminiApiKey } from '../genkit/keys';
+import { Timestamp } from 'firebase-admin/firestore';
+import type { KnowledgeBase } from '@/types/knowledge';
+import { getRagConfig } from '../config/rag';
 
 export interface Document {
   id: string;
+  knowledgeBaseId: string;
   title: string;
   content: string;
-  createdAt: string;
+  createdAt: Timestamp;
   embedding: number[];
   parentId?: string;
   chunkIndex?: number;
 }
+
+const getKnowledgeBasesCollection = () => {
+  if (!adminDb) throw new Error("Firebase Admin não inicializado");
+  return adminDb.collection('knowledge_bases');
+};
 
 const getKnowledgeCollection = () => {
   if (!adminDb) throw new Error("Firebase Admin não inicializado");
   return adminDb.collection('knowledge');
 };
 
-/**
- * Retorna os documentos da base de conhecimento sem a propriedade embedding para manter leve na transmissão
- */
-export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
+// ==========================================
+// OPERAÇÕES DE BASES DE CONHECIMENTO (CRUD)
+// ==========================================
+
+export async function getKnowledgeBases(): Promise<KnowledgeBase[]> {
   try {
-    const snapshot = await getKnowledgeCollection().select('title', 'content', 'createdAt', 'parentId').get();
-    
-    // Agrupa por parentId para mostrar apenas 1 item por documento na UI
+    const snapshot = await getKnowledgeBasesCollection().orderBy('name', 'asc').get();
+    return snapshot.docs.map((doc: any) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as KnowledgeBase[];
+  } catch (err) {
+    console.error('Erro ao listar bases de conhecimento:', err);
+    try {
+      const fallbackSnapshot = await getKnowledgeBasesCollection().get();
+      return fallbackSnapshot.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as KnowledgeBase[];
+    } catch {
+      return [];
+    }
+  }
+}
+
+export async function createKnowledgeBase(
+  name: string,
+  description?: string,
+  color?: string
+): Promise<KnowledgeBase> {
+  if (!name.trim()) throw new Error('O nome da base de conhecimento é obrigatório.');
+
+  const now = Timestamp.now();
+  const id = `kb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+  const newBase: KnowledgeBase = {
+    id,
+    name: name.trim(),
+    description: description?.trim() || '',
+    color: color || '#8b5cf6',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await getKnowledgeBasesCollection().doc(id).set(newBase);
+  return newBase;
+}
+
+export async function updateKnowledgeBase(
+  id: string,
+  name: string,
+  description?: string,
+  color?: string
+): Promise<KnowledgeBase> {
+  if (!id.trim()) throw new Error('ID da base é obrigatório.');
+  if (!name.trim()) throw new Error('O nome da base de conhecimento é obrigatório.');
+
+  const docRef = getKnowledgeBasesCollection().doc(id);
+  const snap = await docRef.get();
+  if (!snap.exists) {
+    throw new Error('Base de conhecimento não encontrada.');
+  }
+
+  const existing = snap.data() as KnowledgeBase;
+  const updated: KnowledgeBase = {
+    ...existing,
+    name: name.trim(),
+    description: description !== undefined ? description.trim() : existing.description,
+    color: color || existing.color || '#8b5cf6',
+    updatedAt: Timestamp.now(),
+  };
+
+  await docRef.set(updated, { merge: true });
+  return updated;
+}
+
+export async function deleteKnowledgeBase(id: string): Promise<boolean> {
+  if (!id.trim()) throw new Error('ID da base é obrigatório.');
+
+  const baseRef = getKnowledgeBasesCollection().doc(id);
+  const baseSnap = await baseRef.get();
+  if (!baseSnap.exists) {
+    return false;
+  }
+
+  // Deleta todos os documentos vinculados à base em lote
+  const docsSnapshot = await getKnowledgeCollection().where('knowledgeBaseId', '==', id).get();
+  if (!docsSnapshot.empty) {
+    const batch = adminDb.batch();
+    docsSnapshot.docs.forEach((doc: any) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+  }
+
+  await baseRef.delete();
+  return true;
+}
+
+// ==========================================
+// OPERAÇÕES DE DOCUMENTOS INDEXADOS
+// ==========================================
+
+export async function getKnowledge(knowledgeBaseId?: string): Promise<Omit<Document, 'embedding'>[]> {
+  try {
+    let query: any = getKnowledgeCollection();
+    if (knowledgeBaseId) {
+      query = query.where('knowledgeBaseId', '==', knowledgeBaseId);
+    }
+
+    const snapshot = await query.select('title', 'content', 'createdAt', 'parentId', 'knowledgeBaseId').get();
     const grouped = new Map<string, any>();
-    
+
     snapshot.docs.forEach((doc: any) => {
       const data = doc.data();
-      const pId = data.parentId || doc.id; // Fallback para documentos antigos sem parentId
-      
+      const pId = data.parentId || doc.id;
+
       if (!grouped.has(pId)) {
         grouped.set(pId, {
-          id: pId, // Usamos o parentId como ID para a UI poder deletar tudo depois
-          title: data.title.replace(/ \(Parte \d+\)$/, ''), // Remove sufixo se existir
+          id: pId,
+          knowledgeBaseId: data.knowledgeBaseId || '',
+          title: data.title.replace(/ \(Parte \d+\)$/, ''),
           content: data.content,
           createdAt: data.createdAt,
         });
       }
     });
-    
+
     return Array.from(grouped.values());
   } catch (err) {
     console.error('Erro ao ler base de conhecimento:', err);
@@ -48,24 +161,18 @@ export async function getKnowledge(): Promise<Omit<Document, 'embedding'>[]> {
   }
 }
 
-/**
- * Retorna os documentos completos incluindo os embeddings
- */
-export async function getKnowledgeWithEmbeddings(): Promise<Document[]> {
+export async function getKnowledgeWithEmbeddings(knowledgeBaseId?: string): Promise<Document[]> {
   try {
-    const snapshot = await getKnowledgeCollection().get();
+    let query: any = getKnowledgeCollection();
+    if (knowledgeBaseId) {
+      query = query.where('knowledgeBaseId', '==', knowledgeBaseId);
+    }
+    const snapshot = await query.get();
     return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Document));
   } catch (err) {
     console.error('Erro ao ler base de conhecimento com embeddings:', err);
     return [];
   }
-}
-
-/**
- * Salva a lista de documentos no arquivo local (substituindo no Firebase seria complexo, usaremos delete/add)
- */
-async function saveKnowledge(docs: Document[]): Promise<void> {
-  // Esse método é legado para quem reescrevia todo o array. Vamos evitar usar.
 }
 
 function chunkText(text: string, maxChunkSize: number = 1500): string[] {
@@ -86,25 +193,27 @@ function chunkText(text: string, maxChunkSize: number = 1500): string[] {
   return chunks;
 }
 
-/**
- * Adiciona um novo documento na base de dados, gerando seu embedding
- */
-export async function addDocument(title: string, content: string): Promise<Omit<Document, 'embedding'>> {
-  // Valida e garante que a variável oficial GEMINI_API_KEY está disponível
+export async function addDocument(
+  title: string,
+  content: string,
+  knowledgeBaseId: string
+): Promise<Omit<Document, 'embedding'>> {
+  if (!knowledgeBaseId || !knowledgeBaseId.trim()) {
+    throw new Error('A identificação da base de conhecimento (knowledgeBaseId) é obrigatória.');
+  }
+
   ensureGeminiApiKey();
 
   const parentId = Math.random().toString(36).substring(2, 9);
-  const createdAt = new Date().toISOString();
-  
-  // 1. Quebra o documento em chunks
+  const createdAt = Timestamp.now();
+
   const chunks = chunkText(content, 1500);
   let firstDoc: Omit<Document, 'embedding'> | null = null;
-  
+
   for (let i = 0; i < chunks.length; i++) {
     const chunkContent = chunks[i];
-    const chunkTitle = chunks.length > 1 ? `${title} (Parte ${i+1})` : title;
-    
-    // 2. Gera o embedding usando a instância do Genkit
+    const chunkTitle = chunks.length > 1 ? `${title} (Parte ${i + 1})` : title;
+
     const embeddingResult = await ai.embed({
       embedder: 'googleai/gemini-embedding-001',
       content: chunkContent,
@@ -114,10 +223,11 @@ export async function addDocument(title: string, content: string): Promise<Omit<
       console.warn(`Nenhum embedding gerado para o chunk ${i}. Pulando...`);
       continue;
     }
-    
+
     const embedding = embeddingResult[0].embedding;
     const newDoc: Document = {
       id: `${parentId}_${i}`,
+      knowledgeBaseId: knowledgeBaseId.trim(),
       parentId,
       chunkIndex: i,
       title: chunkTitle,
@@ -127,10 +237,10 @@ export async function addDocument(title: string, content: string): Promise<Omit<
     };
 
     await getKnowledgeCollection().doc(newDoc.id).set(newDoc);
-    
+
     if (i === 0) {
       const { embedding: _, ...result } = newDoc;
-      firstDoc = { ...result, id: parentId, title }; // Return generic data for UI
+      firstDoc = { ...result, id: parentId, title };
     }
   }
 
@@ -138,13 +248,9 @@ export async function addDocument(title: string, content: string): Promise<Omit<
   return firstDoc;
 }
 
-/**
- * Remove um documento pelo ID
- */
 export async function deleteDocument(id: string): Promise<boolean> {
-  // Busca e deleta todos os chunks com o parentId igual ao id passado
   const snapshot = await getKnowledgeCollection().where('parentId', '==', id).get();
-  
+
   if (!snapshot.empty) {
     const batch = adminDb.batch();
     snapshot.docs.forEach((doc: any) => {
@@ -153,21 +259,17 @@ export async function deleteDocument(id: string): Promise<boolean> {
     await batch.commit();
     return true;
   }
-  
-  // Fallback para documentos antigos
+
   const docRef = getKnowledgeCollection().doc(id);
   const doc = await docRef.get();
   if (!doc.exists) {
-    return false; // Documento não encontrado
+    return false;
   }
 
   await docRef.delete();
   return true;
 }
 
-/**
- * Calcula a similaridade por cosseno entre dois vetores de números
- */
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
   if (vecA.length !== vecB.length) return 0;
   let dotProduct = 0;
@@ -182,39 +284,41 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-/**
- * Interface para os resultados de busca semântica
- */
 export interface SearchResult {
   id: string;
+  knowledgeBaseId: string;
   title: string;
   content: string;
-  createdAt: string;
+  createdAt: Timestamp;
   score: number;
 }
 
-import { getRagConfig } from '../config/rag';
-
 /**
- * Realiza pesquisa semântica por similaridade de cosseno na base de conhecimento local
+ * Realiza pesquisa semântica por similaridade de cosseno na base de conhecimento estrita informada
  */
-export async function searchKnowledge(query: string, customLimit?: number, minScore: number = 0.45): Promise<SearchResult[]> {
-  // Valida e garante que a variável oficial GEMINI_API_KEY está disponível para embedding da busca
+export async function searchKnowledge(
+  query: string,
+  knowledgeBaseId: string,
+  customLimit?: number,
+  minScore: number = 0.45
+): Promise<SearchResult[]> {
+  if (!knowledgeBaseId || !knowledgeBaseId.trim()) {
+    return [];
+  }
+
   ensureGeminiApiKey();
 
-  const docs = await getKnowledgeWithEmbeddings();
+  const docs = await getKnowledgeWithEmbeddings(knowledgeBaseId.trim());
   if (docs.length === 0) {
     return [];
   }
-  
-  // Buscar limite global se não for passado um customizado fixo
+
   let finalLimit = customLimit;
   if (!finalLimit) {
     const ragConfig = await getRagConfig();
     finalLimit = ragConfig.searchLimit || 5;
   }
 
-  // 1. Gerar o embedding da query
   const embeddingResult = await ai.embed({
     embedder: 'googleai/gemini-embedding-001',
     content: query,
@@ -224,11 +328,11 @@ export async function searchKnowledge(query: string, customLimit?: number, minSc
   }
   const queryEmbedding = embeddingResult[0].embedding;
 
-  // 2. Calcular a similaridade contra todos os documentos indexados
   const scoredDocs = docs.map((doc) => {
     const score = cosineSimilarity(queryEmbedding, doc.embedding);
     return {
       id: doc.id,
+      knowledgeBaseId: doc.knowledgeBaseId,
       title: doc.title,
       content: doc.content,
       createdAt: doc.createdAt,
@@ -236,7 +340,6 @@ export async function searchKnowledge(query: string, customLimit?: number, minSc
     };
   });
 
-  // 3. Filtrar pelo score mínimo e ordenar pelo mais similar
   return scoredDocs
     .filter((doc) => doc.score >= minScore)
     .sort((a, b) => b.score - a.score)

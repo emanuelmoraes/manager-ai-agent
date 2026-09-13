@@ -16,6 +16,7 @@ const WorkflowInputSchema = z.object({
       provider: z.string(),
       model: z.string(),
       description: z.string(),
+      knowledgeBaseId: z.string().optional(),
       temperature: z.number().optional(),
       reasoningEffort: z.string().optional(),
     })
@@ -26,30 +27,35 @@ const WorkflowOutputSchema = z.object({
   finalOutput: z.string(),
 });
 
-const consultarBaseConhecimentoTool = ai.defineTool(
-  {
-    name: 'consultarBaseConhecimento',
-    description: 'Consulta a base de conhecimento local do ManagerAI para buscar documentos, manuais, diretrizes e informações fornecidas previamente pelo usuário.',
-    inputSchema: z.object({
-      query: z.string().describe('Frase ou termos de busca para pesquisar semanticamente no banco de conhecimento'),
-    }),
-    outputSchema: z.string(),
-  },
-  async ({ query }) => {
-    try {
-      const results = await searchKnowledge(query, undefined, 0.45);
-      if (results.length === 0) {
-        return 'Nenhum resultado relevante encontrado na base de conhecimento local.';
+function createConsultarBaseConhecimentoTool(knowledgeBaseId?: string) {
+  return ai.defineTool(
+    {
+      name: 'consultarBaseConhecimento',
+      description: 'Consulta a base de conhecimento restrita vinculada a este agente.',
+      inputSchema: z.object({
+        query: z.string().describe('Frase ou termos de busca para pesquisar semanticamente no banco de conhecimento'),
+      }),
+      outputSchema: z.string(),
+    },
+    async ({ query }) => {
+      if (!knowledgeBaseId) {
+        return 'Este agente não possui nenhuma base de conhecimento associada.';
       }
-      return results
-        .map((doc) => `[Documento: ${doc.title} (Relevância: ${(doc.score * 100).toFixed(1)}%)]\n${doc.content}`)
-        .join('\n\n---\n\n');
-    } catch (error: any) {
-      console.error('Erro ao consultar base de conhecimento:', error);
-      return `Erro ao consultar a base de conhecimento: ${error.message}`;
+      try {
+        const results = await searchKnowledge(query, knowledgeBaseId, undefined, 0.45);
+        if (results.length === 0) {
+          return 'Nenhum resultado relevante encontrado na base de conhecimento local.';
+        }
+        return results
+          .map((doc) => `[Documento: ${doc.title} (Relevância: ${(doc.score * 100).toFixed(1)}%)]\n${doc.content}`)
+          .join('\n\n---\n\n');
+      } catch (error: any) {
+        console.error('Erro ao consultar base de conhecimento:', error);
+        return `Erro ao consultar a base de conhecimento: ${error.message}`;
+      }
     }
-  }
-);
+  );
+}
 
 export type WorkflowChunk = {
   agentId: string;
@@ -146,6 +152,7 @@ Por favor, faça sua contribuição agora com base no seu papel no pipeline.`;
         if (agent.provider === 'google' && apiKey) {
           // Set key dynamically for this plugin call
           process.env.GEMINI_API_KEY = apiKey;
+          const consultarBaseConhecimentoTool = createConsultarBaseConhecimentoTool(agent.knowledgeBaseId);
           const response = await ai.generate({
             model: agent.model || 'googleai/gemini-2.5-pro',
             system: systemPrompt,

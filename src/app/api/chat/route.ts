@@ -9,30 +9,36 @@ import { z } from 'genkit';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const consultarBaseConhecimentoTool = ai.defineTool(
-  {
-    name: 'consultarBaseConhecimento',
-    description: 'Consulta a base de conhecimento local do ManagerAI para buscar documentos, manuais, diretrizes e informações fornecidas previamente pelo usuário.',
-    inputSchema: z.object({
-      query: z.string().describe('Frase ou termos de busca para pesquisar semanticamente no banco de conhecimento'),
-    }),
-    outputSchema: z.string(),
-  },
-  async ({ query }) => {
-    try {
-      const results = await searchKnowledge(query, undefined, 0.45);
-      if (results.length === 0) {
-        return 'Nenhum resultado relevante encontrado na base de conhecimento local.';
+function createConsultarBaseConhecimentoTool(knowledgeBaseId?: string) {
+  return ai.defineTool(
+    {
+      name: 'consultarBaseConhecimento',
+      description:
+        'Consulta a base de conhecimento restrita vinculada a este agente para buscar documentos, diretrizes e informações indexadas.',
+      inputSchema: z.object({
+        query: z.string().describe('Frase ou termos de busca para pesquisar semanticamente no banco de conhecimento'),
+      }),
+      outputSchema: z.string(),
+    },
+    async ({ query }) => {
+      if (!knowledgeBaseId) {
+        return 'Este agente não possui nenhuma base de conhecimento associada.';
       }
-      return results
-        .map((doc) => `[Documento: ${doc.title} (Relevância: ${(doc.score * 100).toFixed(1)}%)]\n${doc.content}`)
-        .join('\n\n---\n\n');
-    } catch (error: any) {
-      console.error('Erro ao consultar base de conhecimento:', error);
-      return `Erro ao consultar a base de conhecimento: ${error.message}`;
+      try {
+        const results = await searchKnowledge(query, knowledgeBaseId, undefined, 0.45);
+        if (results.length === 0) {
+          return 'Nenhum resultado relevante encontrado na base de conhecimento deste agente.';
+        }
+        return results
+          .map((doc) => `[Documento: ${doc.title} (Relevância: ${(doc.score * 100).toFixed(1)}%)]\n${doc.content}`)
+          .join('\n\n---\n\n');
+      } catch (error: any) {
+        console.error('Erro ao consultar base de conhecimento:', error);
+        return `Erro ao consultar a base de conhecimento: ${error.message}`;
+      }
     }
-  }
-);
+  );
+}
 
 interface ChatHistoryItem {
   role: 'user' | 'model' | 'assistant';
@@ -52,6 +58,7 @@ export async function POST(req: NextRequest) {
       mcpServers,
       temperature,
       reasoningEffort,
+      knowledgeBaseId,
     } = body;
 
     if (!message || !provider || !model) {
@@ -106,6 +113,7 @@ export async function POST(req: NextRequest) {
       // Carregar ferramentas MCP autorizadas para este agente
       const allowedServers = mcpServers || [];
       const agentMcpTools = await getMcpTools(allowedServers);
+      const consultarBaseConhecimentoTool = createConsultarBaseConhecimentoTool(knowledgeBaseId);
 
       // Formatar mensagens multi-turn para o Genkit
       const genkitMessages = [

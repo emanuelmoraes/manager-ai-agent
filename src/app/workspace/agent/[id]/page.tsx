@@ -28,6 +28,8 @@ export default function AgentConfigPage() {
   const [model, setModel] = useState("googleai/gemini-2.5-pro");
   const [temperature, setTemperature] = useState<number>(0.7);
   const [reasoningEffort, setReasoningEffort] = useState<"low" | "medium" | "high">("medium");
+  const [knowledgeBaseId, setKnowledgeBaseId] = useState<string>("");
+  const [availableKnowledgeBases, setAvailableKnowledgeBases] = useState<{ id: string; name: string }[]>([]);
   const [mcpServers, setMcpServers] = useState<string[]>([]);
   const [availableMcpServers, setAvailableMcpServers] = useState<{ id: string; name?: string }[]>([]);
   const [formError, setFormError] = useState("");
@@ -43,6 +45,16 @@ export default function AgentConfigPage() {
         }
       })
       .catch((err) => console.error("Error loading MCP servers", err));
+
+    // Load Knowledge Bases
+    fetch("/api/settings/knowledge/bases")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setAvailableKnowledgeBases(data.data);
+        }
+      })
+      .catch((err) => console.error("Error loading knowledge bases", err));
 
     // Load Agents
     getAgentsFromFirebase().then((fAgents) => {
@@ -60,6 +72,7 @@ export default function AgentConfigPage() {
           setModel(found.model);
           setTemperature(found.temperature ?? 0.7);
           setReasoningEffort(found.reasoningEffort ?? "medium");
+          setKnowledgeBaseId(found.knowledgeBaseId || "");
           setMcpServers(found.mcpServers || []);
         } else {
           setFormError("Agente não encontrado.");
@@ -89,6 +102,7 @@ export default function AgentConfigPage() {
             model,
             temperature,
             reasoningEffort,
+            knowledgeBaseId: knowledgeBaseId || undefined,
             mcpServers,
           };
           updatedAgents = agents.map((a) => (a.id === editingAgent.id ? updatedAgent : a));
@@ -104,6 +118,7 @@ export default function AgentConfigPage() {
             model,
             temperature,
             reasoningEffort,
+            knowledgeBaseId: knowledgeBaseId || undefined,
             mcpServers,
           };
           updatedAgents = [...agents, newAgent];
@@ -270,6 +285,28 @@ export default function AgentConfigPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   className="flex-1 w-full p-4 bg-white/5 border border-white/10 rounded-lg text-slate-50 text-sm outline-none resize-y font-inherit focus:border-violet-500 transition-colors"
                 />
+              </div>
+
+              {/* Knowledge Base */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Base de Conhecimento (RAG)
+                </label>
+                <select
+                  value={knowledgeBaseId}
+                  onChange={(e) => setKnowledgeBaseId(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900 border border-white/10 rounded-lg text-sm text-slate-100 outline-none focus:border-violet-500"
+                >
+                  <option value="">Nenhuma base vinculada</option>
+                  {availableKnowledgeBases.map((kb) => (
+                    <option key={kb.id} value={kb.id}>
+                      {kb.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-slate-500">
+                  O agente pesquisará estritamente nesta base de conhecimento durante as conversas e fluxos.
+                </span>
               </div>
 
               {/* MCP Servers */}

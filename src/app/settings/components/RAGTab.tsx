@@ -1,17 +1,37 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import mammoth from "mammoth";
+import {
+  FiFolder,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiUploadCloud,
+  FiFileText,
+  FiCheckCircle,
+  FiSliders,
+  FiDatabase,
+} from "react-icons/fi";
+import type { KnowledgeBase } from "@/types/knowledge";
 
-interface KnowledgeDoc {
+export interface KnowledgeDocItem {
   id: string;
+  knowledgeBaseId: string;
   title: string;
   content: string;
-  createdAt: string;
+  createdAt: any;
 }
 
 interface RAGTabProps {
-  docs: KnowledgeDoc[];
+  bases: KnowledgeBase[];
+  selectedBaseId: string | null;
+  onSelectBase: (id: string) => void;
+  onOpenCreateBase: () => void;
+  onOpenUpdateBase: (base: KnowledgeBase) => void;
+  onOpenDeleteBase: (base: KnowledgeBase) => void;
+  docs: KnowledgeDocItem[];
   newDoc: { title: string; content: string };
   setNewDoc: React.Dispatch<React.SetStateAction<{ title: string; content: string }>>;
+  loadingBases: boolean;
   loadingDocs: boolean;
   indexing: boolean;
   ragLimit: number;
@@ -23,9 +43,16 @@ interface RAGTabProps {
 }
 
 export function RAGTab({
+  bases,
+  selectedBaseId,
+  onSelectBase,
+  onOpenCreateBase,
+  onOpenUpdateBase,
+  onOpenDeleteBase,
   docs,
   newDoc,
   setNewDoc,
+  loadingBases,
   loadingDocs,
   indexing,
   ragLimit,
@@ -38,6 +65,8 @@ export function RAGTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [extracting, setExtracting] = useState(false);
+
+  const selectedBase = bases.find((b) => b.id === selectedBaseId) || null;
 
   const processFile = async (file: File) => {
     setExtracting(true);
@@ -112,231 +141,314 @@ export function RAGTab({
     }
   };
 
-  return (
-    <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 w-full py-6 md:py-10 px-4 md:px-0 max-w-6xl mx-auto">
-      {/* LEFT COLUMN: Indexed Docs & Settings */}
-      <div className="flex-1 flex flex-col gap-8 w-full">
+  const formatDocDate = (dateVal: any) => {
+    if (!dateVal) return "";
+    try {
+      if (typeof dateVal?.toDate === "function") {
+        return dateVal.toDate().toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      return new Date(dateVal).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
 
-        {/* Top-K Setting */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  return (
+    <div className="flex flex-col gap-6 w-full py-4 md:py-6 px-4 md:px-0 max-w-6xl mx-auto">
+      {/* 1. SELETOR E GERENCIAMENTO DE BASES DE CONHECIMENTO */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/15 text-violet-400 flex items-center justify-center">
+              <FiDatabase size={20} />
+            </div>
             <div>
-              <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
-                Limite de Busca (Top-K)
+              <h2 className="text-base md:text-lg font-bold text-slate-100 m-0">
+                Bases de Conhecimento
               </h2>
-              <p className="text-slate-400 text-xs md:text-sm m-0 mt-1">
-                Define o número máximo de fragmentos de texto retornados ao agente para compor o contexto.
+              <p className="text-xs text-slate-400 m-0">
+                Organize seus documentos por categoria (ex: Vendas, Administração, Turismo)
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div
-                className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" y1="21" x2="4" y2="14"></line>
-                  <line x1="4" y1="10" x2="4" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12" y2="3"></line>
-                  <line x1="20" y1="21" x2="20" y2="16"></line>
-                  <line x1="20" y1="12" x2="20" y2="3"></line>
-                  <line x1="1" y1="14" x2="7" y2="14"></line>
-                  <line x1="9" y1="8" x2="15" y2="8"></line>
-                  <line x1="17" y1="16" x2="23" y2="16"></line>
-                </svg>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={ragLimit}
-                  onChange={(e) => setRagLimit(Number(e.target.value))}
-                  className="w-10 bg-transparent border-none text-slate-50 text-base font-semibold outline-none text-center"
-                />
-              </div>
+          </div>
+          <button
+            onClick={onOpenCreateBase}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs md:text-sm font-semibold border-none cursor-pointer flex items-center gap-2 transition-all self-start sm:self-auto"
+          >
+            <FiPlus size={16} /> Nova Base
+          </button>
+        </div>
+
+        {/* LISTA DE ABAS / BASES */}
+        {loadingBases ? (
+          <p className="text-slate-400 text-xs py-2">Carregando bases de conhecimento...</p>
+        ) : bases.length === 0 ? (
+          <div className="text-center py-6 text-slate-400 text-xs">
+            Nenhuma base de conhecimento cadastrada. Clique em &quot;Nova Base&quot; para começar.
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {bases.map((base) => {
+              const isSelected = base.id === selectedBaseId;
+              return (
+                <button
+                  key={base.id}
+                  onClick={() => onSelectBase(base.id)}
+                  className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-2.5 cursor-pointer whitespace-nowrap transition-all border ${
+                    isSelected
+                      ? "bg-violet-600/20 border-violet-500/50 text-violet-200 shadow-sm"
+                      : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                  }`}
+                >
+                  <FiFolder size={16} className={isSelected ? "text-violet-400" : "text-slate-500"} />
+                  <span>{base.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* DETALHES DA BASE SELECIONADA & AÇÕES (EDIT / DELETE) */}
+        {selectedBase && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-xl p-3.5 mt-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold text-slate-200">{selectedBase.name}</span>
+              <span className="text-[11px] text-slate-400">
+                {selectedBase.description || "Sem descrição definida."}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={handleSaveRagLimit}
-                disabled={savingRagLimit}
-                className="px-4 py-2 bg-transparent border border-white/10 rounded-xl text-slate-50 text-sm font-semibold cursor-pointer hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => onOpenUpdateBase(selectedBase)}
+                title="Editar Base"
+                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
               >
-                Salvar
+                <FiEdit2 size={13} /> Editar
+              </button>
+              <button
+                onClick={() => onOpenDeleteBase(selectedBase)}
+                title="Excluir Base"
+                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <FiTrash2 size={13} /> Excluir
               </button>
             </div>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Indexed Documents */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f8fafc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
-              Documentos Indexados
-            </h2>
+      {/* 2. ÁREA DE DOCUMENTOS & INDEXAÇÃO DENTRO DA BASE SELECIONADA */}
+      {selectedBase ? (
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 w-full">
+          {/* COLUNA ESQUERDA: Documentos Indexados e Configuração Top-K */}
+          <div className="flex-1 flex flex-col gap-8 w-full">
+            {/* Top-K Setting */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base md:text-lg font-bold text-slate-100 m-0 flex items-center gap-2">
+                    <FiSliders size={18} className="text-slate-400" />
+                    Limite de Busca (Top-K)
+                  </h2>
+                  <p className="text-slate-400 text-xs m-0 mt-1">
+                    Número máximo de fragmentos relevantes retornados ao agente para compor o contexto.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl">
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={ragLimit}
+                      onChange={(e) => setRagLimit(Number(e.target.value))}
+                      className="w-10 bg-transparent border-none text-slate-100 text-sm font-semibold outline-none text-center"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSaveRagLimit}
+                    disabled={savingRagLimit}
+                    className="px-3.5 py-1.5 bg-transparent border border-white/10 rounded-xl text-slate-200 text-xs font-semibold cursor-pointer hover:bg-white/5 transition-colors disabled:opacity-50"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Documentos Indexados */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base md:text-lg font-bold text-slate-100 m-0 flex items-center gap-2">
+                  <FiFileText size={18} className="text-slate-400" />
+                  Documentos em &quot;{selectedBase.name}&quot; ({docs.length})
+                </h2>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {loadingDocs ? (
+                  <p className="text-slate-400 text-xs">Carregando documentos...</p>
+                ) : docs.length === 0 ? (
+                  <div className="text-slate-400 text-xs p-6 bg-white/[0.02] border border-white/5 rounded-2xl text-center">
+                    Nenhum documento indexado nesta base de conhecimento ainda.
+                  </div>
+                ) : (
+                  docs.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 flex flex-col gap-3"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-violet-500/15 flex items-center justify-center text-violet-400 shrink-0">
+                            <FiFileText size={20} />
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-sm font-bold text-slate-100">{doc.title}</span>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider">
+                              TEXTO INDEXADO
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteDoc(doc.id)}
+                          className="bg-transparent border-none text-slate-400 cursor-pointer p-1 hover:text-red-400 transition-colors"
+                          title="Excluir Documento"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-300 m-0 line-clamp-2 leading-relaxed">
+                        {doc.content.substring(0, 150)}...
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <FiCheckCircle size={13} className="text-green-500" />
+                          <span className="text-[10px] text-green-500">Indexado</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500">{formatDocDate(doc.createdAt)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {loadingDocs ? (
-              <p className="text-slate-400">Carregando documentos...</p>
-            ) : docs.length === 0 ? (
-              <p className="text-slate-400">Nenhum documento indexado.</p>
-            ) : (
-              docs.map((doc) => (
+          {/* COLUNA DIREITA: Formulário de Upload e Indexação Manual */}
+          <div className="w-full lg:w-[420px] shrink-0">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 flex flex-col gap-5">
+              <div className="flex items-center gap-2.5">
+                <FiUploadCloud size={22} className="text-violet-400" />
+                <h2 className="text-base md:text-lg font-bold text-slate-100 m-0">
+                  Indexar em &quot;{selectedBase.name}&quot;
+                </h2>
+              </div>
+
+              <form onSubmit={handleAddDoc} className="flex flex-col gap-4">
+                {/* Drag and Drop */}
                 <div
-                  key={doc.id}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 flex flex-col gap-4"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-[1.5px] border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
+                    isDragging ? "border-violet-400 bg-violet-400/5" : "border-white/15 bg-transparent hover:bg-white/5"
+                  }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div
-                        className="w-10 h-10 md:w-11 md:h-11 rounded-lg bg-violet-500/15 flex items-center justify-center text-violet-400 shrink-0"
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                          <polyline points="14 2 14 8 20 8"></polyline>
-                        </svg>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm md:text-base font-bold text-slate-50">{doc.title}</span>
-                        <span className="text-[10px] md:text-xs text-slate-500">TEXTO EXTRAÍDO</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteDoc(doc.id)}
-                      className="bg-transparent border-none text-slate-400 cursor-pointer p-1 hover:text-red-400 transition-colors"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
+                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400">
+                    <FiUploadCloud size={20} />
                   </div>
-                  <p
-                    className="text-xs md:text-sm text-slate-300 m-0 line-clamp-2 leading-relaxed"
-                  >
-                    {doc.content.substring(0, 150)}...
-                  </p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      <span className="text-[10px] md:text-xs text-green-500">Indexado</span>
-                    </div>
-                    <span className="text-[10px] md:text-xs text-slate-500">
-                      {new Date(doc.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  <div className="text-center">
+                    <span className="text-xs font-semibold text-slate-200 block">
+                      {extracting ? "Extraindo texto..." : "Arraste e solte arquivos aqui"}
+                    </span>
+                    <span className="text-[11px] text-slate-500 mt-0.5 block">
+                      PDF, DOCX, TXT, MD
                     </span>
                   </div>
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 bg-transparent border border-white/10 rounded-lg text-slate-100 text-xs font-semibold mt-1 hover:bg-white/5"
+                  >
+                    Procurar Arquivo
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".pdf,.txt,.docx,.md"
+                    onChange={onFileChange}
+                  />
                 </div>
-              ))
-            )}
+
+                <div className="flex items-center gap-3 my-1">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider">OU DIGITE</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300">Título do Documento *</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Manual de Vendas e FAQ"
+                    value={newDoc.title}
+                    onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
+                    required
+                    className="px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-100 text-sm outline-none focus:border-violet-400"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300">Conteúdo *</label>
+                  <textarea
+                    placeholder="Cole ou insira o texto que deseja indexar..."
+                    value={newDoc.content}
+                    onChange={(e) => setNewDoc({ ...newDoc, content: e.target.value })}
+                    required
+                    rows={6}
+                    className="px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-100 text-sm outline-none resize-y font-inherit focus:border-violet-400"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={indexing || extracting}
+                  className={`w-full py-3 border-none rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 mt-2 transition-all ${
+                    indexing || extracting
+                      ? "bg-violet-600/40 cursor-not-allowed"
+                      : "bg-violet-600 hover:bg-violet-500 cursor-pointer shadow-lg shadow-violet-600/20"
+                  }`}
+                >
+                  {indexing ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    <FiDatabase size={16} />
+                  )}
+                  <span>Indexar nesta Base</span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* RIGHT COLUMN: Index New Content */}
-      <div className="w-full lg:w-[440px] shrink-0">
-        <div
-          className="bg-white/5 border border-white/10 rounded-[24px] p-5 md:p-8 flex flex-col gap-6"
-        >
-          <div className="flex items-center gap-3">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <h2 className="text-lg md:text-xl font-bold text-slate-50 m-0">
-              Indexar Novo Conteúdo
-            </h2>
-          </div>
-
-          <form onSubmit={handleAddDoc} className="flex flex-col gap-5">
-            {/* Upload Area */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-[1.5px] border-dashed rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all ${isDragging ? 'border-violet-400 bg-violet-400/5' : 'border-white/15 bg-transparent hover:bg-white/5'}`}
-            >
-              <div
-                className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-slate-400"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"></path>
-                  <path d="M16 16l-4-4-4 4"></path>
-                </svg>
-              </div>
-              <div className="text-center">
-                <span className="text-sm font-semibold text-slate-200 block">
-                  {extracting ? "Extraindo texto..." : "Arraste e solte arquivos aqui"}
-                </span>
-                <span className="text-xs text-slate-500 mt-1 block">
-                  PDF, DOCX, TXT, MD (Máx 50MB)
-                </span>
-              </div>
-              <button
-                type="button"
-                className="px-4 py-2 bg-transparent border border-white/10 rounded-lg text-slate-50 text-xs font-semibold mt-2 hover:bg-white/5 transition-colors"
-              >
-                Procurar Arquivo
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".pdf,.txt,.docx,.md"
-                onChange={onFileChange}
-              />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase">OU TEXTO MANUAL</span>
-              <div className="flex-1 h-px bg-white/10" />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-200">Título do Documento *</label>
-              <input
-                type="text"
-                placeholder="Ex: Procedimentos de Vendas 2024"
-                value={newDoc.title}
-                onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
-                required
-                className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none focus:border-violet-400 transition-colors"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-200">Conteúdo *</label>
-              <textarea
-                placeholder="Cole o texto que deseja indexar..."
-                value={newDoc.content}
-                onChange={(e) => setNewDoc({ ...newDoc, content: e.target.value })}
-                required
-                className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-50 text-sm outline-none min-h-[180px] resize-y font-inherit focus:border-violet-400 transition-colors"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={indexing}
-              className={`w-full p-4 border-none rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 mt-2 transition-all ${indexing ? 'bg-violet-600/40 cursor-not-allowed shadow-none' : 'bg-gradient-to-br from-violet-400 to-violet-600 cursor-pointer shadow-[0_8px_25px_rgba(124,58,237,0.25)] hover:scale-[1.02]'}`}
-            >
-              {indexing ? (
-                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-                </svg>
-              )}
-              Indexar na Base Vetorial
-            </button>
-          </form>
+      ) : (
+        <div className="p-8 text-center bg-white/[0.02] border border-white/5 rounded-2xl text-slate-400 text-sm">
+          Selecione uma base de conhecimento acima para visualizar e gerenciar os documentos indexados.
         </div>
-      </div>
+      )}
     </div>
   );
 }

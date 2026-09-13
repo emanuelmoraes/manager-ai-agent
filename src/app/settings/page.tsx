@@ -10,16 +10,13 @@ import { TokensTab } from "./components/TokensTab";
 import { Timestamp } from "firebase/firestore";
 import { getAgentsFromFirebase } from "@/lib/firebase/sync";
 import type { ApiTokenRecord } from "@/types/token";
+import type { KnowledgeBase, KnowledgeDocument } from "@/types/knowledge";
+import { CreateKnowledgeBaseModal } from "./components/knowledge/CreateKnowledgeBaseModal";
+import { UpdateKnowledgeBaseModal } from "./components/knowledge/UpdateKnowledgeBaseModal";
+import { DeleteKnowledgeBaseModal } from "./components/knowledge/DeleteKnowledgeBaseModal";
 import { AiProviderId, Agent } from "@/app/workspace/types";
 import { fetchTokensAction, revokeTokenAction } from "./actions";
 import { useCredentialGuard } from "@/components/auth/CredentialGuardProvider";
-
-interface KnowledgeDoc {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-}
 
 interface McpServer {
   id: string;
@@ -47,12 +44,22 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
 
   // RAG State
-  const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
+  const [bases, setBases] = useState<KnowledgeBase[]>([]);
+  const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
+  const [loadingBases, setLoadingBases] = useState(false);
+  const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
   const [newDoc, setNewDoc] = useState({ title: "", content: "" });
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const [ragLimit, setRagLimit] = useState(5);
   const [savingRagLimit, setSavingRagLimit] = useState(false);
+
+  // Modais CRUD de Base de Conhecimento (Segregados)
+  const [isCreateBaseOpen, setIsCreateBaseOpen] = useState(false);
+  const [isUpdateBaseOpen, setIsUpdateBaseOpen] = useState(false);
+  const [isDeleteBaseOpen, setIsDeleteBaseOpen] = useState(false);
+  const [baseToEdit, setBaseToEdit] = useState<KnowledgeBase | null>(null);
+  const [baseToDelete, setBaseToDelete] = useState<KnowledgeBase | null>(null);
 
   // MCP State
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
@@ -91,7 +98,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (activeTab === "knowledge") {
-      loadKnowledgeDocs();
+      loadKnowledgeBases();
+      loadRagConfig();
     } else if (activeTab === "mcp") {
       loadMcpServers();
     } else if (activeTab === "tokens") {
@@ -100,22 +108,54 @@ export default function SettingsPage() {
     }
   }, [activeTab]);
 
-  // --- RAG Functions ---
-  const loadKnowledgeDocs = async () => {
-    setLoadingDocs(true);
-    try {
-      const res = await fetch("/api/settings/knowledge");
-      const data = await res.json();
-      if (data.success) {
-        setDocs(data.data);
-      }
+  useEffect(() => {
+    if (selectedBaseId) {
+      loadKnowledgeDocs(selectedBaseId);
+    } else {
+      setDocs([]);
+    }
+  }, [selectedBaseId]);
 
+  // --- RAG Functions ---
+  const loadKnowledgeBases = async () => {
+    setLoadingBases(true);
+    try {
+      const res = await fetch("/api/settings/knowledge/bases");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setBases(data.data);
+        if (data.data.length > 0 && !selectedBaseId) {
+          setSelectedBaseId(data.data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar bases de conhecimento:", error);
+    } finally {
+      setLoadingBases(false);
+    }
+  };
+
+  const loadRagConfig = async () => {
+    try {
       const configRes = await fetch("/api/settings/rag");
       if (configRes.ok) {
         const configData = await configRes.json();
         if (configData.success && configData.data) {
           setRagLimit(configData.data.searchLimit || 5);
         }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar config RAG:", error);
+    }
+  };
+
+  const loadKnowledgeDocs = async (baseId: string) => {
+    setLoadingDocs(true);
+    try {
+      const res = await fetch(`/api/settings/knowledge?baseId=${baseId}`);
+      const data = await res.json();
+      if (data.success) {
+        setDocs(data.data);
       }
     } catch (error) {
       console.error("Erro ao carregar documentos:", error);
@@ -143,6 +183,10 @@ export default function SettingsPage() {
 
   const handleAddDoc = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedBaseId) {
+      notifyWarning("Selecione uma base de conhecimento para indexar o documento.");
+      return;
+    }
     if (!newDoc.title.trim() || !newDoc.content.trim()) return;
 
     setIndexing(true);
@@ -150,7 +194,10 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings/knowledge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newDoc),
+        body: JSON.stringify({
+          ...newDoc,
+          knowledgeBaseId: selectedBaseId,
+        }),
       });
 
       const data = await res.json();
@@ -168,6 +215,28 @@ export default function SettingsPage() {
     } finally {
       setIndexing(false);
     }
+  };
+
+  const handleBaseCreated = (newBase: KnowledgeBase) => {
+    setBases((prev) => [...prev, newBase]);
+    setSelectedBaseId(newBase.id);
+    notifySuccess(`Base "${newBase.name}" criada com sucesso!`);
+  };
+
+  const handleBaseUpdated = (updatedBase: KnowledgeBase) => {
+    setBases((prev) => prev.map((b) => (b.id === updatedBase.id ? updatedBase : b)));
+    notifySuccess(`Base "${updatedBase.name}" atualizada com sucesso!`);
+  };
+
+  const handleBaseDeleted = (deletedBaseId: string) => {
+    setBases((prev) => {
+      const remaining = prev.filter((b) => b.id !== deletedBaseId);
+      if (selectedBaseId === deletedBaseId) {
+        setSelectedBaseId(remaining.length > 0 ? remaining[0].id : null);
+      }
+      return remaining;
+    });
+    notifySuccess("Base de conhecimento e seus documentos excluídos com sucesso!");
   };
 
   const handleDeleteDoc = async (id: string) => {
@@ -469,9 +538,22 @@ export default function SettingsPage() {
         {activeTab === "knowledge" && (
           <div style={{ animation: "fade-in 0.3s ease-out", width: "100%", flex: 1 }}>
             <RAGTab
+              bases={bases}
+              selectedBaseId={selectedBaseId}
+              onSelectBase={setSelectedBaseId}
+              onOpenCreateBase={() => setIsCreateBaseOpen(true)}
+              onOpenUpdateBase={(base) => {
+                setBaseToEdit(base);
+                setIsUpdateBaseOpen(true);
+              }}
+              onOpenDeleteBase={(base) => {
+                setBaseToDelete(base);
+                setIsDeleteBaseOpen(true);
+              }}
               docs={docs}
               newDoc={newDoc}
               setNewDoc={setNewDoc}
+              loadingBases={loadingBases}
               loadingDocs={loadingDocs}
               indexing={indexing}
               ragLimit={ragLimit}
@@ -516,6 +598,33 @@ export default function SettingsPage() {
           </div>
         )}
       </main>
+
+      {/* Modais Segregados para Gestão de Bases de Conhecimento (CRUD) */}
+      <CreateKnowledgeBaseModal
+        isOpen={isCreateBaseOpen}
+        onClose={() => setIsCreateBaseOpen(false)}
+        onCreated={handleBaseCreated}
+      />
+
+      <UpdateKnowledgeBaseModal
+        isOpen={isUpdateBaseOpen}
+        onClose={() => {
+          setIsUpdateBaseOpen(false);
+          setBaseToEdit(null);
+        }}
+        base={baseToEdit}
+        onUpdated={handleBaseUpdated}
+      />
+
+      <DeleteKnowledgeBaseModal
+        isOpen={isDeleteBaseOpen}
+        onClose={() => {
+          setIsDeleteBaseOpen(false);
+          setBaseToDelete(null);
+        }}
+        base={baseToDelete}
+        onDeleted={handleBaseDeleted}
+      />
     </div>
   );
 }

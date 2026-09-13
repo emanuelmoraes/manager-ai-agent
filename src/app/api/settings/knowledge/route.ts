@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getKnowledge, addDocument } from '@/lib/rag/store';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const list = await getKnowledge();
+    const { searchParams } = new URL(req.url);
+    const baseId = searchParams.get('baseId') || undefined;
+    const list = await getKnowledge(baseId);
     return NextResponse.json({ success: true, data: list });
   } catch (error: any) {
     console.error('Erro na API GET de conhecimento:', error);
@@ -17,7 +19,11 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { title, content } = body;
+    const { title, content, knowledgeBaseId } = body;
+
+    if (!knowledgeBaseId || !knowledgeBaseId.trim()) {
+      return NextResponse.json({ success: false, error: 'A base de conhecimento é obrigatória.' }, { status: 400 });
+    }
 
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, error: 'O título é obrigatório.' }, { status: 400 });
@@ -28,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Adiciona o documento gerando seu embedding
-    const doc = await addDocument(title.trim(), content.trim());
+    const doc = await addDocument(title.trim(), content.trim(), knowledgeBaseId.trim());
 
     return NextResponse.json({ success: true, data: doc });
   } catch (error: any) {

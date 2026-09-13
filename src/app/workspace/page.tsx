@@ -311,7 +311,8 @@ export default function WorkspacePage() {
           model: agent.model,
           temperature: agent.temperature,
           reasoningEffort: agent.reasoningEffort,
-          mcpServers: agent.mcpServers || []
+          mcpServers: agent.mcpServers || [],
+          knowledgeBaseId: agent.knowledgeBaseId,
         })
       });
 

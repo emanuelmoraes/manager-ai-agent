@@ -19,6 +19,7 @@ const WorkflowEngineInputSchema = z.object({
       provider: z.string(),
       model: z.string(),
       description: z.string(),
+      knowledgeBaseId: z.string().optional(),
       temperature: z.number().optional(),
       mcpServers: z.array(z.string()).optional(),
     })
